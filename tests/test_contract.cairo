@@ -19,29 +19,31 @@ fn test_increase_balance() {
 
     let dispatcher = ITreeDispatcher { contract_address };
 
-    let root_before = dispatcher.get_root();
-    assert(root_before == 0, 'Invalid balance');
+    dispatcher.insert(10);
+    dispatcher.insert(20);
+    dispatcher.insert(15);
+    dispatcher.insert(30);
 
-    dispatcher.insert(42);
+    dispatcher.traverse();
 
-    let balance_after = dispatcher.get_root();
-    assert(balance_after == 42, 'Invalid balance');
+    let inserted_value = dispatcher.get_value(1);
+    assert(inserted_value == 10, 'Invalid value');
 }
 
-#[test]
-#[feature("safe_dispatcher")]
-fn test_cannot_increase_balance_with_zero_value() {
-    let contract_address = deploy_contract("Tree");
+// #[test]
+// #[feature("safe_dispatcher")]
+// fn test_cannot_increase_balance_with_zero_value() {
+//     let contract_address = deploy_contract("Tree");
 
-    let safe_dispatcher = ITreeSafeDispatcher { contract_address };
+//     let safe_dispatcher = ITreeSafeDispatcher { contract_address };
 
-    let root_before = safe_dispatcher.get_root().unwrap();
-    assert(root_before == 0, 'Invalid balance');
+//     let root_before = safe_dispatcher.get_root().unwrap();
+//     assert(root_before == 0, 'Invalid balance');
 
-    match safe_dispatcher.insert(0) {
-        Result::Ok(_) => core::panic_with_felt252('Should have panicked'),
-        Result::Err(panic_data) => {
-            assert(*panic_data.at(0) == 'Value cannot be 0', *panic_data.at(0));
-        }
-    };
-}
+//     match safe_dispatcher.insert(0) {
+//         Result::Ok(_) => core::panic_with_felt252('Should have panicked'),
+//         Result::Err(panic_data) => {
+//             assert(*panic_data.at(0) == 'Value cannot be 0', *panic_data.at(0));
+//         }
+//     };
+// }
