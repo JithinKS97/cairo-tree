@@ -23,6 +23,8 @@ fn test_increase_balance() {
     dispatcher.insert(20);
     dispatcher.insert(15);
     dispatcher.insert(30);
+    dispatcher.insert(4);
+    dispatcher.insert(80);
 
     dispatcher.traverse();
 
