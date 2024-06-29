@@ -122,6 +122,19 @@ mod Tree {
 
     #[generate_trait]
     impl TreeRotations of TreeRotationsTrait {
+        //     y       
+        //    / \
+        //   x   C
+        //  / \
+        // A   B
+        //
+        //     to
+        //    
+        //     x
+        //    / \
+        //   A   y
+        //      / \
+        //     B   C
         fn rotate_right(ref self: ContractState, y: u64) -> u64 {
             let x = self.tree.read(y).left;
             let B = self.tree.read(x).right;
@@ -155,6 +168,19 @@ mod Tree {
             x
         }
 
+        //    x       
+        //   / \
+        //  A   y
+        //     / \
+        //    B   C
+        //
+        //     to
+        //    
+        //     y
+        //    / \
+        //   x   C
+        //  / \ 
+        // A   B
         fn rotate_left(ref self: ContractState, x: u64) -> u64 {
             let y = self.tree.read(x).right;
             let B = self.tree.read(y).left;
@@ -188,12 +214,34 @@ mod Tree {
             y
         }
 
+        //   z
+        //  /
+        // y
+        //  \
+        //   x
+        //  
+        //  to
+        //
+        //   x
+        //  / \
+        // y   z
         fn rotate_left_right(ref self: ContractState, z: u64) -> u64 {
             let y = self.tree.read(z).left;
             self.rotate_left(y);
             self.rotate_right(z)
         }
 
+        //    z
+        //     \
+        //      y
+        //     /
+        //    x
+        //
+        //   to
+        // 
+        //    x
+        //   / \
+        //  z   y
         fn rotate_right_left(ref self: ContractState, z: u64) -> u64 {
             let y = self.tree.read(z).right;
             self.rotate_right(y);
