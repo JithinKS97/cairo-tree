@@ -153,6 +153,12 @@ mod Tree {
             println!("{}", current_node.value);
             self.traverse_recursive(current_node.right);
         }
+
+        fn is_left_child(ref self: ContractState, node_id: u64) -> bool {
+            let parent_id = self.tree.read(node_id).parent;
+            let parent = self.tree.read(parent_id);
+            return parent.left == node_id;
+        }
     }
 
     #[generate_trait]
@@ -381,12 +387,6 @@ mod Tree {
                 }
             };
             print!("\n\n");
-        }
-
-        fn is_left_child(ref self: ContractState, node_id: u64) -> bool {
-            let parent_id = self.tree.read(node_id).parent;
-            let parent = self.tree.read(parent_id);
-            return parent.left == node_id;
         }
 
         fn print_n_spaces(ref self: ContractState, n: u64) {
