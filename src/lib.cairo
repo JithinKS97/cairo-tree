@@ -335,7 +335,7 @@ mod Tree {
             let mut middle_spacing = self.power(2, no_of_levels + 2) + self.power(2, no_of_levels) - 2;
             let mut begin_spacing = middle_spacing / 2 - 1;
             
-            print!("\n");
+            println!("");
 
             if root_id == 0 {
                 println!("Tree is empty");
@@ -386,7 +386,8 @@ mod Tree {
                     queue.append((node.right, current_level + 1));
                 }
             };
-            print!("\n\n");
+            println!("");
+            println!("");
         }
 
         fn print_n_spaces(ref self: ContractState, n: u64) {
