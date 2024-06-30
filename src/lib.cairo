@@ -16,7 +16,8 @@ pub trait ITree<TContractState> {
 
 #[starknet::contract]
 mod Tree {
-    #[storage]
+    use core::option::OptionTrait;
+#[storage]
     struct Storage {
         root: u64,
         tree: LegacyMap::<u64, Node>,
@@ -93,7 +94,7 @@ mod Tree {
         }
 
         fn print_tree(ref self: ContractState) {
-            self.print_tree_impl(self.root.read(), 0);
+            self.print_tree_impl(self.root.read());
         }
     }
 
@@ -321,46 +322,79 @@ mod Tree {
             }
         }
 
-        fn print_tree_impl(ref self: ContractState, node_id: u64, level: u64) {
+        fn print_tree_impl(ref self: ContractState, node_id: u64) {
             let root_id = self.root.read();
-        
+            let no_of_levels = self.find_height_impl(root_id) - 1;
+
+            let mut middle_spacing = self.power(2, no_of_levels + 2) + self.power(2, no_of_levels) - 2;
+            let mut begin_spacing = middle_spacing / 2 - 1;
+            
+            print!("\n");
+
             if root_id == 0 {
                 println!("Tree is empty");
                 return;
             }
-    
-            // Create a queue for BFS, storing (node_id, level) pairs
+
             let mut queue: Array<(u64, u64)> = ArrayTrait::new();
             queue.append((root_id, 0));
-    
             let mut current_level = 0;
-    
+            
             while !queue.is_empty() {
-                // Dequeue a node from queue
                 let (node_id, level) = queue.pop_front().unwrap();
                 let node = self.tree.read(node_id);
-    
-                // If we've moved to a new level, print a newline and the new level
+
+                if(current_level == 0) {
+                    self.print_n_spaces(begin_spacing);
+                }
+
                 if level > current_level {
-                    println!(""); // End the previous level's line
+                    println!("");
+                    middle_spacing = begin_spacing;
+                    begin_spacing = (begin_spacing / 2) - 1;
+                    self.print_n_spaces(begin_spacing);
                     current_level = level;
+                } else {
+                    if(current_level == no_of_levels) {
+                        if(self.is_left_child(node_id)) {
+                            self.print_n_spaces(2);
+                        } else {
+                            self.print_n_spaces(4);
+                        }
+                    } else if(current_level != 0) {
+                        self.print_n_spaces(middle_spacing);
+                    }
                 }
-    
-                // Print the current node
-                print!("{} ", node.value);
-    
-                // Enqueue left child if exists
+
+                if(node.value<10) {
+                    print!("0");
+                }
+                
+                print!("{}", node.value);  
+
                 if node.left != 0 {
-                    queue.append((node.left, level + 1));
+                    queue.append((node.left, current_level + 1));
                 }
-    
-                // Enqueue right child if exists
+
                 if node.right != 0 {
-                    queue.append((node.right, level + 1));
+                    queue.append((node.right, current_level + 1));
                 }
             };
-    
-            println!("");
+            print!("\n\n");
+        }
+
+        fn is_left_child(ref self: ContractState, node_id: u64) -> bool {
+            let parent_id = self.tree.read(node_id).parent;
+            let parent = self.tree.read(parent_id);
+            return parent.left == node_id;
+        }
+
+        fn print_n_spaces(ref self: ContractState, n: u64) {
+            let mut i = 0;
+            while i < n {
+                print!(" ");
+                i += 1;
+            }
         }
 
         fn power(ref self: ContractState, base: u64, exponent: u64) -> u64 {
@@ -409,14 +443,28 @@ mod Tree {
 //    00
 // 00    00
 
+// 3
+// 0 4
+
 //         00
 //    00        00
 // 00    00  00    00
+
+// 8
+// 3 8
+// 0 4
+
+// 
 
 //                   00
 //         00                  00
 //    00        00        00        00
 // 00    00  00    00  00    00  00    00
+
+// 18 38
+// 8 18
+// 3 8
+// 0 4
 
 //                                       00                                      
 //                   00                                      00
@@ -424,3 +472,8 @@ mod Tree {
 //    00        00        00        00        00        00        00        00
 // 00    00  00    00  00    00  00    00  00    00  00    00  00    00  00    00
 
+// 38
+// 18 38
+// 8 18
+// 3 8
+// 0 4 2
