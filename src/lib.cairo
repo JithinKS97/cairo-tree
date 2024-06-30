@@ -328,12 +328,18 @@ mod Tree {
             }
         }
 
+        // Prints tree in the below format
+        //
+        //                          00B                         
+        //            00B                         00B    
+        //     00B           00B           00B           00B 
+        // 00B     00B   00B     00B   00B     00B   00B     00B
         fn print_tree_impl(ref self: ContractState, node_id: u64) {
             let root_id = self.root.read();
             let no_of_levels = self.find_height_impl(root_id) - 1;
 
-            let mut middle_spacing = self.power(2, no_of_levels + 2) + self.power(2, no_of_levels) - 2;
-            let mut begin_spacing = middle_spacing / 2 - 1;
+            let mut middle_spacing = 3*self.power(2, no_of_levels) + 5*self.power(2, no_of_levels-1) + 3 * (self.power(2, no_of_levels-1) - 1);
+            let mut begin_spacing = (middle_spacing - 3)/2;
             
             println!("");
 
@@ -357,15 +363,15 @@ mod Tree {
                 if level > current_level {
                     println!("");
                     middle_spacing = begin_spacing;
-                    begin_spacing = (begin_spacing / 2) - 1;
+                    begin_spacing = (begin_spacing - 3)/2;
                     self.print_n_spaces(begin_spacing);
                     current_level = level;
                 } else {
                     if(current_level == no_of_levels) {
                         if(self.is_left_child(node_id)) {
-                            self.print_n_spaces(2);
+                            self.print_n_spaces(3);
                         } else {
-                            self.print_n_spaces(4);
+                            self.print_n_spaces(5);
                         }
                     } else if(current_level != 0) {
                         self.print_n_spaces(middle_spacing);
@@ -376,7 +382,7 @@ mod Tree {
                     print!("0");
                 }
                 
-                print!("{}", node.value);  
+                print!("{}B", node.value);  
 
                 if node.left != 0 {
                     queue.append((node.left, current_level + 1));
@@ -387,7 +393,7 @@ mod Tree {
                 }
             };
             println!("");
-            println!("");
+            
         }
 
         fn print_n_spaces(ref self: ContractState, n: u64) {
@@ -409,72 +415,4 @@ mod Tree {
         }
     }
 }
-// 00
 
-//    00
-//   /  \
-// 00    00
-
-//         00
-//      /      \
-//    00        00
-//   /  \      /  \
-// 00    00  00    00
-
-//                   00
-//           /                \
-//         00                  00
-//      /      \            /      \
-//    00        00        00        00
-//   /  \      /  \      /  \      /  \ 
-// 00    00  00    00  00    00  00    00
-
-//                                       00                                      
-//                     /                                    \
-//                   00                                      00
-//           /                \                      /                \
-//         00                  00                  00                  00
-//      /      \            /      \            /      \            /      \
-//    00        00        00        00        00        00        00        00
-//   /  \      /  \      /  \      /  \      /  \      /  \      /  \      /  \
-// 00    00  00    00  00    00  00    00  00    00  00    00  00    00  00    00
-
-// 00
-
-//    00
-// 00    00
-
-// 3
-// 0 4
-
-//         00
-//    00        00
-// 00    00  00    00
-
-// 8
-// 3 8
-// 0 4
-
-// 
-
-//                   00
-//         00                  00
-//    00        00        00        00
-// 00    00  00    00  00    00  00    00
-
-// 18 38
-// 8 18
-// 3 8
-// 0 4
-
-//                                       00                                      
-//                   00                                      00
-//         00                  00                  00                  00
-//    00        00        00        00        00        00        00        00
-// 00    00  00    00  00    00  00    00  00    00  00    00  00    00  00    00
-
-// 38
-// 18 38
-// 8 18
-// 3 8
-// 0 4 2
