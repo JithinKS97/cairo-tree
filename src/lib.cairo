@@ -246,7 +246,7 @@ mod Tree {
             let node = self.tree.read(node_id);
             let mut original_color = node.color;
             let mut replacement_node = 0;
-
+        
             if node.left == 0 {
                 replacement_node = node.right;
                 self.transplant(node_id, node.right);
@@ -258,7 +258,7 @@ mod Tree {
                 let mut successor = self.tree.read(successor_id);
                 original_color = successor.color;
                 replacement_node = successor.right;
-
+        
                 if successor.parent != node_id {
                     self.transplant(successor_id, successor.right);
                     successor.right = node.right;
@@ -266,151 +266,96 @@ mod Tree {
                 } else {
                     replacement_node = successor_id;
                 }
-
+        
                 self.transplant(node_id, successor_id);
                 successor.left = node.left;
                 self.update_parent(node.left, successor_id);
                 successor.color = node.color;
                 self.tree.write(successor_id, successor);
             }
-
+        
             if original_color == 0 { // Black
-                if replacement_node != 0 {
-                    self.delete_fixup(replacement_node);
+                if replacement_node != 0 && self.tree.read(replacement_node).color == 1 {
+                    // If we replaced a black node with a red node, just recolor it black
+                    self.set_color(replacement_node, 0);
                 } else {
-                    // If replacement_node is null, start fixup from the parent
-                    let parent = self.tree.read(node_id).parent;
-                    if parent != 0 {
-                        self.delete_fixup(parent);
-                    }
+                    // Otherwise, we need to run the fix-up procedure
+                    self.delete_fixup(replacement_node);
                 }
             }
-
+        
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
-                let mut root_node = self.tree.read(root);
-                root_node.color = 0; // Black
-                self.tree.write(root, root_node);
+                self.set_color(root, 0);
             }
         }
 
         fn delete_fixup(ref self: ContractState, mut node: u64) {
-            while node != self.root.read()
-                && (node == 0 || self.tree.read(node).color == 0) {
-                    let parent = self.get_parent(node);
-                    if parent == 0 {
+            while node != self.root.read() && self.is_black(node) {
+                let parent = self.get_parent(node);
+                if parent == 0 { break; }
+        
+                if self.is_left_child(node) {
+                    let mut sibling = self.tree.read(parent).right;
+        
+                    if self.is_red(sibling) {
+                        self.set_color(sibling, 0);
+                        self.set_color(parent, 1);
+                        self.rotate_left(parent);
+                        sibling = self.tree.read(parent).right;
+                    }
+        
+                    if self.is_black(self.tree.read(sibling).left) && self.is_black(self.tree.read(sibling).right) {
+                        self.set_color(sibling, 1);
+                        node = parent;
+                    } else {
+                        if self.is_black(self.tree.read(sibling).right) {
+                            self.set_color(self.tree.read(sibling).left, 0);
+                            self.set_color(sibling, 1);
+                            self.rotate_right(sibling);
+                            sibling = self.tree.read(parent).right;
+                        }
+                        self.set_color(sibling, self.tree.read(parent).color);
+                        self.set_color(parent, 0);
+                        self.set_color(self.tree.read(sibling).right, 0);
+                        self.rotate_left(parent);
                         break;
                     }
-
-                    if self.is_left_child(node) {
-                        node = self.fix_left_child(node, parent);
-                    } else {
-                        node = self.fix_right_child(node, parent);
+                } else {
+                    // Mirror case for right child
+                    let mut sibling = self.tree.read(parent).left;
+        
+                    if self.is_red(sibling) {
+                        self.set_color(sibling, 0);
+                        self.set_color(parent, 1);
+                        self.rotate_right(parent);
+                        sibling = self.tree.read(parent).left;
                     }
-                };
-            self.ensure_black(node);
-            self.ensure_root_black();
+        
+                    if self.is_black(self.tree.read(sibling).right) && self.is_black(self.tree.read(sibling).left) {
+                        self.set_color(sibling, 1);
+                        node = parent;
+                    } else {
+                        if self.is_black(self.tree.read(sibling).left) {
+                            self.set_color(self.tree.read(sibling).right, 0);
+                            self.set_color(sibling, 1);
+                            self.rotate_left(sibling);
+                            sibling = self.tree.read(parent).left;
+                        }
+                        self.set_color(sibling, self.tree.read(parent).color);
+                        self.set_color(parent, 0);
+                        self.set_color(self.tree.read(sibling).left, 0);
+                        self.rotate_right(parent);
+                        break;
+                    }
+                }
+            };
+            self.set_color(node, 0);
         }
 
-        fn fix_left_child(ref self: ContractState, node: u64, parent: u64) -> u64 {
-            let mut sibling = self.tree.read(parent).right;
-
-            if self.is_red(sibling) {
-                sibling = self.handle_red_sibling_left(parent, sibling);
-            }
-
-            if self.has_black_children(sibling) {
-                self.set_color(sibling, 1); // Red
-                parent
-            } else {
-                self.handle_black_sibling_with_red_child_left(node, parent, sibling)
-            }
-        }
-
-        fn fix_right_child(ref self: ContractState, node: u64, parent: u64) -> u64 {
-            let mut sibling = self.tree.read(parent).left;
-
-            if self.is_red(sibling) {
-                sibling = self.handle_red_sibling_right(parent, sibling);
-            }
-
-            if self.has_black_children(sibling) {
-                self.set_color(sibling, 1); // Red
-                parent
-            } else {
-                self.handle_black_sibling_with_red_child_right(node, parent, sibling)
-            }
-        }
-
-        fn handle_red_sibling_left(ref self: ContractState, parent: u64, sibling: u64) -> u64 {
-            self.set_color(sibling, 0); // Black
-            self.set_color(parent, 1); // Red
-            self.rotate_left(parent);
-            self.tree.read(self.tree.read(parent).right).right
-        }
-
-        fn handle_red_sibling_right(ref self: ContractState, parent: u64, sibling: u64) -> u64 {
-            self.set_color(sibling, 0); // Black
-            self.set_color(parent, 1); // Red
-            self.rotate_right(parent);
-            self.tree.read(self.tree.read(parent).left).left
-        }
-
-        fn has_black_children(ref self: ContractState, node: u64) -> bool {
-            (node == 0 || !self.is_red(self.tree.read(node).left))
-                && (node == 0 || !self.is_red(self.tree.read(node).right))
-        }
-
-        fn handle_black_sibling_with_red_child_left(
-            ref self: ContractState, node: u64, parent: u64, mut sibling: u64
-        ) -> u64 {
-            if sibling != 0 && !self.is_red(self.tree.read(sibling).right) {
-                self.handle_black_sibling_with_red_left_child(sibling);
-                sibling = self.tree.read(parent).right;
-            }
-            self.handle_black_sibling_with_red_right_child(sibling);
-            self.root.read()
-        }
-
-        fn handle_black_sibling_with_red_child_right(
-            ref self: ContractState, node: u64, parent: u64, mut sibling: u64
-        ) -> u64 {
-            if sibling != 0 && !self.is_red(self.tree.read(sibling).left) {
-                self.handle_black_sibling_with_red_right_child(sibling);
-                sibling = self.tree.read(parent).left;
-            }
-            self.handle_black_sibling_with_red_left_child(sibling);
-            self.root.read()
-        }
-
-        fn handle_black_sibling_with_red_left_child(ref self: ContractState, sibling: u64) {
-            self.set_color(self.tree.read(sibling).left, 0); // Black
-            self.set_color(sibling, 1); // Red
-            self.rotate_right(sibling);
-        }
-
-        fn handle_black_sibling_with_red_right_child(ref self: ContractState, sibling: u64) {
-            self.set_color(self.tree.read(sibling).right, 0); // Black
-            self.set_color(sibling, 1); // Red
-            self.rotate_left(sibling);
-        }
-
-        fn ensure_black(ref self: ContractState, node: u64) {
-            if node != 0 {
-                let mut node_data = self.tree.read(node);
-                node_data.color = 0; // Black
-                self.tree.write(node, node_data);
-            }
-        }
-
-        fn ensure_root_black(ref self: ContractState) {
-            let root = self.root.read();
-            if root != 0 {
-                let mut root_data = self.tree.read(root);
-                root_data.color = 0; // Black
-                self.tree.write(root, root_data);
-            }
+        fn is_black(ref self: ContractState, node: u64) -> bool {
+            node == 0 || self.tree.read(node).color == 0
         }
 
         fn transplant(ref self: ContractState, u: u64, v: u64) {

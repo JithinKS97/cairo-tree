@@ -20,15 +20,16 @@ fn test_increase_balance() {
     let dispatcher = ITreeDispatcher { contract_address };
 
 
-    dispatcher.insert(20);
-    dispatcher.insert(10);
-    dispatcher.insert(30);
-    dispatcher.insert(5);
+    dispatcher.insert(13);
+    dispatcher.insert(8);
+    dispatcher.insert(17);
+    dispatcher.insert(1);
+    dispatcher.insert(11);
     dispatcher.insert(15);
     dispatcher.insert(25);
-    dispatcher.insert(40);
-    dispatcher.insert(3);
-    dispatcher.insert(7);
+    dispatcher.insert(6);
+    dispatcher.insert(22);
+    dispatcher.insert(27);
     println!("Tree after insertions");
 }
 
