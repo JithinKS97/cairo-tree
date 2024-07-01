@@ -19,25 +19,37 @@ fn test_increase_balance() {
 
     let dispatcher = ITreeDispatcher { contract_address };
 
-    dispatcher.insert(1);
-    dispatcher.print_tree();
 
-    dispatcher.insert(2);
-    dispatcher.print_tree();
-
-    dispatcher.insert(3);
-    dispatcher.print_tree();
-
-    dispatcher.insert(4);
-    dispatcher.print_tree();
-
+    dispatcher.insert(20);
+    dispatcher.insert(10);
+    dispatcher.insert(30);
     dispatcher.insert(5);
-    dispatcher.print_tree();
-
-    dispatcher.insert(6);
-    dispatcher.print_tree();
-
+    dispatcher.insert(15);
+    dispatcher.insert(25);
+    dispatcher.insert(40);
+    dispatcher.insert(3);
     dispatcher.insert(7);
+    println!("Tree after insertions");
+    dispatcher.print_tree();
+
+    println!("Deleting 3");
+    dispatcher.delete(3);
+    dispatcher.print_tree();
+
+    println!("Deleting 5");
+    dispatcher.delete(5);
+    dispatcher.print_tree();
+
+    println!("Deleting 40");
+    dispatcher.delete(40);
+    dispatcher.print_tree();
+
+    println!("Deleting 30");
+    dispatcher.delete(30);
+    dispatcher.print_tree();
+
+    println!("Deleting 20");
+    dispatcher.delete(20);
     dispatcher.print_tree();
 
     assert(10 == 10, 'Invalid value');
