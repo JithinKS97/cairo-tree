@@ -175,59 +175,73 @@ mod Tree {
         
         fn balance_after_insertion(ref self: ContractState, node_id: u64) {
             let mut current = node_id;
-            
             while current != self.root.read() && self.is_red(self.tree.read(current).parent) {
                 let parent = self.tree.read(current).parent;
                 let grandparent = self.tree.read(parent).parent;
                 
                 if self.is_left_child(parent) {
-                    let uncle = self.tree.read(grandparent).right;
-                    
-                    if self.is_red(uncle) {
-                        // Case 1: Uncle is red
-                        self.set_color(parent, 0); // Black
-                        self.set_color(uncle, 0); // Black
-                        self.set_color(grandparent, 1); // Red
-                        current = grandparent;
-                    } else {
-                        // Case 2 & 3: Uncle is black
-                        if !self.is_left_child(current) {
-                            // Case 2: Current is right child
-                            current = parent;
-                            self.rotate_left(current);
-                        }
-                        // Case 3: Current is left child
-                        let new_parent = self.tree.read(current).parent;
-                        self.set_color(new_parent, 0); // Black
-                        self.set_color(grandparent, 1); // Red
-                        self.rotate_right(grandparent);
-                    }
+                    current = self.balance_left_case(current, parent, grandparent);
                 } else {
-                    let uncle = self.tree.read(grandparent).left;
-                    
-                    if self.is_red(uncle) {
-                        // Case 1: Uncle is red
-                        self.set_color(parent, 0); // Black
-                        self.set_color(uncle, 0); // Black
-                        self.set_color(grandparent, 1); // Red
-                        current = grandparent;
-                    } else {
-                        // Case 2 & 3: Uncle is black
-                        if self.is_left_child(current) {
-                            // Case 2: Current is left child
-                            current = parent;
-                            self.rotate_right(current);
-                        }
-                        // Case 3: Current is right child
-                        let new_parent = self.tree.read(current).parent;
-                        self.set_color(new_parent, 0); // Black
-                        self.set_color(grandparent, 1); // Red
-                        self.rotate_left(grandparent);
-                    }
+                    current = self.balance_right_case(current, parent, grandparent);
                 }
             };
+            self.ensure_root_is_black();
+        }
+    
+        fn balance_left_case(ref self: ContractState, current: u64, parent: u64, grandparent: u64) -> u64 {
+            let uncle = self.tree.read(grandparent).right;
             
-            // Ensure root is black
+            if self.is_red(uncle) {
+                return self.handle_red_uncle(current, parent, grandparent, uncle);
+            } else {
+                return self.handle_black_uncle_left(current, parent, grandparent);
+            }
+        }
+    
+        fn balance_right_case(ref self: ContractState, current: u64, parent: u64, grandparent: u64) -> u64 {
+            let uncle = self.tree.read(grandparent).left;
+            
+            if self.is_red(uncle) {
+                return self.handle_red_uncle(current, parent, grandparent, uncle);
+            } else {
+                return self.handle_black_uncle_right(current, parent, grandparent);
+            }
+        }
+    
+        fn handle_red_uncle(ref self: ContractState, current: u64, parent: u64, grandparent: u64, uncle: u64) -> u64 {
+            self.set_color(parent, 0);     // Black
+            self.set_color(uncle, 0);      // Black
+            self.set_color(grandparent, 1); // Red
+            grandparent
+        }
+    
+        fn handle_black_uncle_left(ref self: ContractState, current: u64, parent: u64, grandparent: u64) -> u64 {
+            let mut new_current = current;
+            if !self.is_left_child(current) {
+                new_current = parent;
+                self.rotate_left(new_current);
+            }
+            let new_parent = self.tree.read(new_current).parent;
+            self.set_color(new_parent, 0); // Black
+            self.set_color(grandparent, 1); // Red
+            self.rotate_right(grandparent);
+            new_current
+        }
+    
+        fn handle_black_uncle_right(ref self: ContractState, current: u64, parent: u64, grandparent: u64) -> u64 {
+            let mut new_current = current;
+            if self.is_left_child(current) {
+                new_current = parent;
+                self.rotate_right(new_current);
+            }
+            let new_parent = self.tree.read(new_current).parent;
+            self.set_color(new_parent, 0); // Black
+            self.set_color(grandparent, 1); // Red
+            self.rotate_left(grandparent);
+            new_current
+        }
+    
+        fn ensure_root_is_black(ref self: ContractState) {
             let root = self.root.read();
             self.set_color(root, 0); // Black
         }
