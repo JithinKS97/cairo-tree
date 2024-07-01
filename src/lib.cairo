@@ -16,11 +16,16 @@ pub trait ITree<TContractState> {
 
 #[starknet::contract]
 mod Tree {
+    use core::traits::TryInto;
+    use core::traits::IndexView;
+    use tree::ITree;
+    use core::array::ArrayTrait;
     use core::option::OptionTrait;
-#[storage]
+    #[storage]
     struct Storage {
         root: u64,
         tree: LegacyMap::<u64, Node>,
+        node_position: LegacyMap::<u64, u64>,
         next_id: u64,
     }
 
@@ -329,72 +334,178 @@ mod Tree {
         }
 
         // Prints tree in the below format
-        //
         //                          00B                         
         //            00B                         00B    
         //     00B           00B           00B           00B 
         // 00B     00B   00B     00B   00B     00B   00B     00B
-        fn print_tree_impl(ref self: ContractState, node_id: u64) {
-            let root_id = self.root.read();
-            let no_of_levels = self.find_height_impl(root_id) - 1;
 
-            let mut middle_spacing = 3*self.power(2, no_of_levels) + 5*self.power(2, no_of_levels-1) + 3 * (self.power(2, no_of_levels-1) - 1);
-            let mut begin_spacing = (middle_spacing - 3)/2;
-            
+        fn print_tree_impl(ref self: ContractState, node_id: u64) {
             println!("");
+
+            let root_id = self.root.read();
+            let initial_level = 0;
+
+            self.collect_position_and_levels_of_nodes(root_id, 0, initial_level);
+
+            let root_id = self.root.read();
 
             if root_id == 0 {
                 println!("Tree is empty");
                 return;
             }
 
+            let no_of_levels = self.find_height_impl(root_id) - 1;
+
+            let mut middle_spacing = 3 * self.power(2, no_of_levels)
+                + 5 * self.power(2, no_of_levels - 1)
+                + 3 * (self.power(2, no_of_levels - 1) - 1);
+            let mut begin_spacing = (middle_spacing - 3) / 2;
+
             let mut queue: Array<(u64, u64)> = ArrayTrait::new();
             queue.append((root_id, 0));
             let mut current_level = 0;
-            
-            while !queue.is_empty() {
-                let (node_id, level) = queue.pop_front().unwrap();
-                let node = self.tree.read(node_id);
+            let mut filled_position_in_levels: Array<Array<(u64, u64)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(u64, u64)> = ArrayTrait::new();
 
-                if(current_level == 0) {
-                    self.print_n_spaces(begin_spacing);
-                }
+            while !queue
+                .is_empty() {
+                    let (node_id, level) = queue.pop_front().unwrap();
+                    let node = self.tree.read(node_id);
 
-                if level > current_level {
-                    println!("");
-                    middle_spacing = begin_spacing;
-                    begin_spacing = (begin_spacing - 3)/2;
-                    self.print_n_spaces(begin_spacing);
-                    current_level = level;
-                } else {
-                    if(current_level == no_of_levels) {
-                        if(self.is_left_child(node_id)) {
-                            self.print_n_spaces(3);
-                        } else {
-                            self.print_n_spaces(5);
-                        }
-                    } else if(current_level != 0) {
-                        self.print_n_spaces(middle_spacing);
+                    if level > current_level {
+                        current_level = level;
+                        filled_position_in_levels.append(filled_position_in_level);
+                        filled_position_in_level = ArrayTrait::new();
                     }
-                }
 
-                if(node.value<10) {
-                    print!("0");
-                }
-                
-                print!("{}B", node.value);  
+                    let position = self.node_position.read(node_id);
 
-                if node.left != 0 {
-                    queue.append((node.left, current_level + 1));
-                }
+                    filled_position_in_level.append((node.value, position));
 
-                if node.right != 0 {
-                    queue.append((node.right, current_level + 1));
-                }
-            };
+                    if node.left != 0 {
+                        queue.append((node.left, current_level + 1));
+                    }
+
+                    if node.right != 0 {
+                        queue.append((node.right, current_level + 1));
+                    }
+                };
+            filled_position_in_levels.append(filled_position_in_level);
+            let all_nodes = self.construct_list(@filled_position_in_levels);
+
+            let mut i = 0;
+
+            while i < all_nodes
+                .len()
+                .try_into()
+                .unwrap() {
+                    let level = all_nodes.at(i.try_into().unwrap());
+                    let mut j = 0;
+
+                    while j < level
+                        .len() {
+                            let value = level.at(j.try_into().unwrap());
+
+                            if (j == 0) {
+                                self.print_n_spaces(begin_spacing);
+                            } else {
+                                if (i == no_of_levels) {
+                                    if (j % 2 == 0) {
+                                        self.print_n_spaces(3);
+                                    } else {
+                                        self.print_n_spaces(5);
+                                    }
+                                } else {
+                                    self.print_n_spaces(middle_spacing);
+                                }
+                            }
+
+                            if (*value == 0) {
+                                print!("...");
+                            } else {
+                                if (*value < 10) {
+                                    print!("0");
+                                }
+                                print!("{}B", value);
+                            }
+
+                            j += 1;
+                        };
+
+                    if (i < no_of_levels) {
+                        middle_spacing = begin_spacing;
+                        begin_spacing = (begin_spacing - 3) / 2;
+                    }
+
+                    println!("");
+                    i += 1;
+                };
+
             println!("");
-            
         }
+
+        fn construct_list(
+            ref self: ContractState, filled_levels_info: @Array<Array<(u64, u64)>>
+        ) -> Array<Array<u64>> {
+            let no_of_levels = self.get_height();
+            let mut i = 0;
+            let mut final_list: Array<Array<u64>> = ArrayTrait::new();
+            while i < no_of_levels {
+                let filled_levels = filled_levels_info.at(i.try_into().unwrap());
+                let final_levels = self.get_level_list(i, filled_levels);
+                final_list.append(final_levels);
+                i = i + 1;
+            };
+            return final_list;
+        }
+
+        fn get_level_list(
+            ref self: ContractState, level: u64, filled_levels: @Array<(u64, u64)>
+        ) -> Array<u64> {
+            let mut i = 0;
+            let max_no_of_nodes = self.power(2, level);
+            let mut final_list: Array<u64> = ArrayTrait::new();
+            while i < max_no_of_nodes {
+                let value = self.get_if_value_present(filled_levels, i);
+                final_list.append(value);
+                i += 1;
+            };
+            return final_list;
+        }
+
+        fn get_if_value_present(
+            ref self: ContractState, filled_levels: @Array<(u64, u64)>, position: u64
+        ) -> u64 {
+            let mut i = 0;
+            let mut found_value = 0_u64;
+            // iterate through filled_levels
+            while i < filled_levels
+                .len() {
+                    let (value, pos) = filled_levels.at(i.try_into().unwrap());
+                    if (pos == @position) {
+                        found_value = *value;
+                    }
+                    i += 1;
+                };
+
+            return found_value;
+        }
+
+        fn collect_position_and_levels_of_nodes(
+            ref self: ContractState, node_id: u64, position: u64, level: u64
+        ) {
+            if node_id == 0 {
+                return;
+            }
+
+            let node = self.tree.read(node_id);
+
+            self.node_position.write(node_id, position);
+
+            self.collect_position_and_levels_of_nodes(node.left, position * 2, level + 1);
+            self.collect_position_and_levels_of_nodes(node.right, position * 2 + 1, level + 1);
+        }
+
 
         fn print_n_spaces(ref self: ContractState, n: u64) {
             let mut i = 0;
