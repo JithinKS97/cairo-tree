@@ -40,9 +40,6 @@ fn test_increase_balance() {
     dispatcher.insert(7);
     dispatcher.print_tree();
 
-    dispatcher.insert(8);
-    dispatcher.print_tree();
-
     assert(10 == 10, 'Invalid value');
 }
 

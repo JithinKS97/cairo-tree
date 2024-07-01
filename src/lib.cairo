@@ -4,10 +4,6 @@ pub trait ITree<TContractState> {
     fn get_root(self: @TContractState) -> u64;
     fn get_value(self: @TContractState, node_id: u64) -> u64;
     fn traverse(ref self: TContractState);
-    fn rotate_left(ref self: TContractState, y: u64);
-    fn rotate_right(ref self: TContractState, y: u64);
-    fn rotate_left_right(ref self: TContractState, z: u64);
-    fn rotate_right_left(ref self: TContractState, z: u64);
     fn get_left_child(self: @TContractState, node_id: u64) -> u64;
     fn get_right_child(self: @TContractState, node_id: u64) -> u64;
     fn get_height(ref self: TContractState) -> u64;
@@ -69,22 +65,6 @@ mod Tree {
 
         fn traverse(ref self: ContractState) {
             self.traverse_recursive(self.root.read());
-        }
-
-        fn rotate_left(ref self: ContractState, y: u64) {
-            self.rotate_left_impl(y);
-        }
-
-        fn rotate_right(ref self: ContractState, y: u64) {
-            self.rotate_right_impl(y);
-        }
-
-        fn rotate_left_right(ref self: ContractState, z: u64) {
-            self.rotate_left_right_impl(z);
-        }
-
-        fn rotate_right_left(ref self: ContractState, z: u64) {
-            self.rotate_right_left_impl(z);
         }
 
         fn get_left_child(self: @ContractState, node_id: u64) -> u64 {
@@ -207,7 +187,7 @@ mod Tree {
                 return self.handle_black_uncle_right(current, parent, grandparent);
             }
         }
-    
+     
         fn handle_red_uncle(ref self: ContractState, current: u64, parent: u64, grandparent: u64, uncle: u64) -> u64 {
             self.set_color(parent, 0);     // Black
             self.set_color(uncle, 0);      // Black
@@ -278,7 +258,7 @@ mod Tree {
         //   A   y
         //      / \
         //     B   C
-        fn rotate_right_impl(ref self: ContractState, y: u64) -> u64 {
+        fn rotate_right(ref self: ContractState, y: u64) -> u64 {
             let x = self.tree.read(y).left;
             let B = self.tree.read(x).right;
 
@@ -324,7 +304,7 @@ mod Tree {
         //   x   C
         //  / \ 
         // A   B
-        fn rotate_left_impl(ref self: ContractState, x: u64) -> u64 {
+        fn rotate_left(ref self: ContractState, x: u64) -> u64 {
             let y = self.tree.read(x).right;
             let B = self.tree.read(y).left;
 
@@ -355,40 +335,6 @@ mod Tree {
 
             // Return the new root of the subtree
             y
-        }
-
-        //   z
-        //  /
-        // y
-        //  \
-        //   x
-        //  
-        //  to
-        //
-        //   x
-        //  / \
-        // y   z
-        fn rotate_left_right_impl(ref self: ContractState, z: u64) -> u64 {
-            let y = self.tree.read(z).left;
-            self.rotate_left_impl(y);
-            self.rotate_right_impl(z)
-        }
-
-        //    z
-        //     \
-        //      y
-        //     /
-        //    x
-        //
-        //   to
-        // 
-        //    x
-        //   / \
-        //  z   y
-        fn rotate_right_left_impl(ref self: ContractState, z: u64) -> u64 {
-            let y = self.tree.read(z).right;
-            self.rotate_right_impl(y);
-            self.rotate_left_impl(z)
         }
 
         // Helper functions
