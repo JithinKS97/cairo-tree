@@ -238,6 +238,10 @@ mod Tree {
         fn get_parent(ref self: ContractState, node: u64) -> u64 {
             if node == 0 { 0 } else { self.tree.read(node).parent }
         }
+
+        fn is_black(ref self: ContractState, node: u64) -> bool {
+            node == 0 || self.tree.read(node).color == 0
+        }
     }
 
     #[generate_trait]
@@ -352,10 +356,6 @@ mod Tree {
                 }
             };
             self.set_color(node, 0);
-        }
-
-        fn is_black(ref self: ContractState, node: u64) -> bool {
-            node == 0 || self.tree.read(node).color == 0
         }
 
         fn transplant(ref self: ContractState, u: u64, v: u64) {
