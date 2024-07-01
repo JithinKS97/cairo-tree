@@ -35,6 +35,7 @@ mod Tree {
         left: u64,
         right: u64,
         parent: u64,
+        color: u8,
     }
 
     #[constructor]
@@ -55,6 +56,7 @@ mod Tree {
 
             self.insert_recursive(self.root.read(), new_node_id, value);
         }
+        
 
         fn get_root(self: @ContractState) -> u64 {
             self.root.read()
@@ -141,7 +143,12 @@ mod Tree {
             let new_node_id = self.next_id.read();
             self.next_id.write(new_node_id + 1);
 
-            let new_node = Node { value, left: 0, right: 0, parent: 0, };
+            let mut color = 1;
+            if(self.root.read() == 0) {
+                color = 0;
+            }
+
+            let new_node = Node { value, left: 0, right: 0, parent: 0, color: color };
 
             self.tree.write(new_node_id, new_node);
             return new_node_id;
@@ -380,7 +387,7 @@ mod Tree {
 
                     let position = self.node_position.read(node_id);
 
-                    filled_position_in_level.append((node.value, position));
+                    filled_position_in_level.append((node_id, position));
 
                     if node.left != 0 {
                         queue.append((node.left, current_level + 1));
@@ -404,7 +411,7 @@ mod Tree {
 
                     while j < level
                         .len() {
-                            let value = level.at(j.try_into().unwrap());
+                            let node_id = level.at(j.try_into().unwrap());
 
                             if (j == 0) {
                                 self.print_n_spaces(begin_spacing);
@@ -420,13 +427,24 @@ mod Tree {
                                 }
                             }
 
-                            if (*value == 0) {
+                            if (*node_id == 0) {
                                 print!("...");
                             } else {
-                                if (*value < 10) {
+                                let node = self.tree.read(*node_id);
+                                let node_value = node.value;
+                                let node_color = node.color;
+
+                                if (node_value < 10) {
                                     print!("0");
                                 }
-                                print!("{}B", value);
+ 
+                                print!("{}", node_value);
+
+                                if(node_color == 0) {
+                                    print!("B");
+                                } else {
+                                    print!("R");
+                                }
                             }
 
                             j += 1;
@@ -466,29 +484,29 @@ mod Tree {
             let max_no_of_nodes = self.power(2, level);
             let mut final_list: Array<u64> = ArrayTrait::new();
             while i < max_no_of_nodes {
-                let value = self.get_if_value_present(filled_levels, i);
-                final_list.append(value);
+                let node_id = self.get_if_node_id_present(filled_levels, i);
+                final_list.append(node_id);
                 i += 1;
             };
             return final_list;
         }
 
-        fn get_if_value_present(
+        fn get_if_node_id_present(
             ref self: ContractState, filled_levels: @Array<(u64, u64)>, position: u64
         ) -> u64 {
             let mut i = 0;
-            let mut found_value = 0_u64;
+            let mut found_node_id = 0_u64;
             // iterate through filled_levels
             while i < filled_levels
                 .len() {
-                    let (value, pos) = filled_levels.at(i.try_into().unwrap());
+                    let (node_id, pos) = filled_levels.at(i.try_into().unwrap());
                     if (pos == @position) {
-                        found_value = *value;
+                        found_node_id = *node_id;
                     }
                     i += 1;
                 };
 
-            return found_value;
+            return found_node_id;
         }
 
         fn collect_position_and_levels_of_nodes(
