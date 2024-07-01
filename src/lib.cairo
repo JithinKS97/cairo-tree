@@ -234,6 +234,10 @@ mod Tree {
             };
             return result;
         }
+
+        fn get_parent(ref self: ContractState, node: u64) -> u64 {
+            if node == 0 { 0 } else { self.tree.read(node).parent }
+        }
     }
 
     #[generate_trait]
@@ -242,7 +246,7 @@ mod Tree {
             let node = self.tree.read(node_id);
             let mut original_color = node.color;
             let mut replacement_node = 0;
-        
+
             if node.left == 0 {
                 replacement_node = node.right;
                 self.transplant(node_id, node.right);
@@ -254,7 +258,7 @@ mod Tree {
                 let mut successor = self.tree.read(successor_id);
                 original_color = successor.color;
                 replacement_node = successor.right;
-        
+
                 if successor.parent != node_id {
                     self.transplant(successor_id, successor.right);
                     successor.right = node.right;
@@ -262,14 +266,14 @@ mod Tree {
                 } else {
                     replacement_node = successor_id;
                 }
-        
+
                 self.transplant(node_id, successor_id);
                 successor.left = node.left;
                 self.update_parent(node.left, successor_id);
                 successor.color = node.color;
                 self.tree.write(successor_id, successor);
             }
-        
+
             if original_color == 0 { // Black
                 if replacement_node != 0 {
                     self.delete_fixup(replacement_node);
@@ -281,7 +285,7 @@ mod Tree {
                     }
                 }
             }
-        
+
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
@@ -292,90 +296,115 @@ mod Tree {
         }
 
         fn delete_fixup(ref self: ContractState, mut node: u64) {
-            while node != self.root.read() && (node == 0 || self.tree.read(node).color == 0) {
-                let parent = if node == 0 { 0 } else { self.tree.read(node).parent };
-                if parent == 0 { // We've reached the root
-                    break;
-                }
-                
-                if node == self.tree.read(parent).left {
-                    let mut sibling = self.tree.read(parent).right;
-                    
-                    // Case 1: Red sibling
-                    if self.is_red(sibling) {
-                        self.set_color(sibling, 0); // Black
-                        self.set_color(parent, 1); // Red
-                        self.rotate_left(parent);
-                        sibling = self.tree.read(self.tree.read(parent).right).right;
+            while node != self.root.read()
+                && (node == 0 || self.tree.read(node).color == 0) {
+                    let parent = self.get_parent(node);
+                    if parent == 0 {
+                        break;
                     }
-                    
-                    // Case 2: Black sibling with two black children
-                    if (sibling == 0 || !self.is_red(self.tree.read(sibling).left)) &&
-                       (sibling == 0 || !self.is_red(self.tree.read(sibling).right)) {
-                        self.set_color(sibling, 1); // Red
-                        node = parent;
+
+                    if self.is_left_child(node) {
+                        node = self.fix_left_child(node, parent);
                     } else {
-                        // Case 3: Black sibling with red left child and black right child
-                        if sibling != 0 && !self.is_red(self.tree.read(sibling).right) {
-                            self.set_color(self.tree.read(sibling).left, 0); // Black
-                            self.set_color(sibling, 1); // Red
-                            self.rotate_right(sibling);
-                            sibling = self.tree.read(parent).right;
-                        }
-                        
-                        // Case 4: Black sibling with red right child
-                        self.set_color(sibling, self.tree.read(parent).color);
-                        self.set_color(parent, 0); // Black
-                        if sibling != 0 {
-                            self.set_color(self.tree.read(sibling).right, 0); // Black
-                        }
-                        self.rotate_left(parent);
-                        node = self.root.read(); // Terminate the loop
+                        node = self.fix_right_child(node, parent);
                     }
-                } else {
-                    // Symmetric cases for right child
-                    let mut sibling = self.tree.read(parent).left;
-                    
-                    // Case 1: Red sibling
-                    if self.is_red(sibling) {
-                        self.set_color(sibling, 0); // Black
-                        self.set_color(parent, 1); // Red
-                        self.rotate_right(parent);
-                        sibling = self.tree.read(self.tree.read(parent).left).left;
-                    }
-                    
-                    // Case 2: Black sibling with two black children
-                    if (sibling == 0 || !self.is_red(self.tree.read(sibling).right)) &&
-                       (sibling == 0 || !self.is_red(self.tree.read(sibling).left)) {
-                        self.set_color(sibling, 1); // Red
-                        node = parent;
-                    } else {
-                        // Case 3: Black sibling with red right child and black left child
-                        if sibling != 0 && !self.is_red(self.tree.read(sibling).left) {
-                            self.set_color(self.tree.read(sibling).right, 0); // Black
-                            self.set_color(sibling, 1); // Red
-                            self.rotate_left(sibling);
-                            sibling = self.tree.read(parent).left;
-                        }
-                        
-                        // Case 4: Black sibling with red left child
-                        self.set_color(sibling, self.tree.read(parent).color);
-                        self.set_color(parent, 0); // Black
-                        if sibling != 0 {
-                            self.set_color(self.tree.read(sibling).left, 0); // Black
-                        }
-                        self.rotate_right(parent);
-                        node = self.root.read(); // Terminate the loop
-                    }
-                }
-            };
-            
-            // Ensure the root and the final node are black
+                };
+            self.ensure_black(node);
+            self.ensure_root_black();
+        }
+
+        fn fix_left_child(ref self: ContractState, node: u64, parent: u64) -> u64 {
+            let mut sibling = self.tree.read(parent).right;
+
+            if self.is_red(sibling) {
+                sibling = self.handle_red_sibling_left(parent, sibling);
+            }
+
+            if self.has_black_children(sibling) {
+                self.set_color(sibling, 1); // Red
+                parent
+            } else {
+                self.handle_black_sibling_with_red_child_left(node, parent, sibling)
+            }
+        }
+
+        fn fix_right_child(ref self: ContractState, node: u64, parent: u64) -> u64 {
+            let mut sibling = self.tree.read(parent).left;
+
+            if self.is_red(sibling) {
+                sibling = self.handle_red_sibling_right(parent, sibling);
+            }
+
+            if self.has_black_children(sibling) {
+                self.set_color(sibling, 1); // Red
+                parent
+            } else {
+                self.handle_black_sibling_with_red_child_right(node, parent, sibling)
+            }
+        }
+
+        fn handle_red_sibling_left(ref self: ContractState, parent: u64, sibling: u64) -> u64 {
+            self.set_color(sibling, 0); // Black
+            self.set_color(parent, 1); // Red
+            self.rotate_left(parent);
+            self.tree.read(self.tree.read(parent).right).right
+        }
+
+        fn handle_red_sibling_right(ref self: ContractState, parent: u64, sibling: u64) -> u64 {
+            self.set_color(sibling, 0); // Black
+            self.set_color(parent, 1); // Red
+            self.rotate_right(parent);
+            self.tree.read(self.tree.read(parent).left).left
+        }
+
+        fn has_black_children(ref self: ContractState, node: u64) -> bool {
+            (node == 0 || !self.is_red(self.tree.read(node).left))
+                && (node == 0 || !self.is_red(self.tree.read(node).right))
+        }
+
+        fn handle_black_sibling_with_red_child_left(
+            ref self: ContractState, node: u64, parent: u64, mut sibling: u64
+        ) -> u64 {
+            if sibling != 0 && !self.is_red(self.tree.read(sibling).right) {
+                self.handle_black_sibling_with_red_left_child(sibling);
+                sibling = self.tree.read(parent).right;
+            }
+            self.handle_black_sibling_with_red_right_child(sibling);
+            self.root.read()
+        }
+
+        fn handle_black_sibling_with_red_child_right(
+            ref self: ContractState, node: u64, parent: u64, mut sibling: u64
+        ) -> u64 {
+            if sibling != 0 && !self.is_red(self.tree.read(sibling).left) {
+                self.handle_black_sibling_with_red_right_child(sibling);
+                sibling = self.tree.read(parent).left;
+            }
+            self.handle_black_sibling_with_red_left_child(sibling);
+            self.root.read()
+        }
+
+        fn handle_black_sibling_with_red_left_child(ref self: ContractState, sibling: u64) {
+            self.set_color(self.tree.read(sibling).left, 0); // Black
+            self.set_color(sibling, 1); // Red
+            self.rotate_right(sibling);
+        }
+
+        fn handle_black_sibling_with_red_right_child(ref self: ContractState, sibling: u64) {
+            self.set_color(self.tree.read(sibling).right, 0); // Black
+            self.set_color(sibling, 1); // Red
+            self.rotate_left(sibling);
+        }
+
+        fn ensure_black(ref self: ContractState, node: u64) {
             if node != 0 {
                 let mut node_data = self.tree.read(node);
                 node_data.color = 0; // Black
                 self.tree.write(node, node_data);
             }
+        }
+
+        fn ensure_root_black(ref self: ContractState) {
             let root = self.root.read();
             if root != 0 {
                 let mut root_data = self.tree.read(root);

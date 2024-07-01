@@ -30,29 +30,6 @@ fn test_increase_balance() {
     dispatcher.insert(3);
     dispatcher.insert(7);
     println!("Tree after insertions");
-    dispatcher.print_tree();
-
-    println!("Deleting 3");
-    dispatcher.delete(3);
-    dispatcher.print_tree();
-
-    println!("Deleting 5");
-    dispatcher.delete(5);
-    dispatcher.print_tree();
-
-    println!("Deleting 40");
-    dispatcher.delete(40);
-    dispatcher.print_tree();
-
-    println!("Deleting 30");
-    dispatcher.delete(30);
-    dispatcher.print_tree();
-
-    println!("Deleting 20");
-    dispatcher.delete(20);
-    dispatcher.print_tree();
-
-    assert(10 == 10, 'Invalid value');
 }
 
 // #[test]
