@@ -55,6 +55,7 @@ mod Tree {
             }
 
             self.insert_recursive(self.root.read(), new_node_id, value);
+            self.balance_after_insertion(new_node_id);
         }
         
 
@@ -171,7 +172,82 @@ mod Tree {
             let parent = self.tree.read(parent_id);
             return parent.left == node_id;
         }
-    }
+        
+        fn balance_after_insertion(ref self: ContractState, node_id: u64) {
+            let mut current = node_id;
+            
+            while current != self.root.read() && self.is_red(self.tree.read(current).parent) {
+                let parent = self.tree.read(current).parent;
+                let grandparent = self.tree.read(parent).parent;
+                
+                if self.is_left_child(parent) {
+                    let uncle = self.tree.read(grandparent).right;
+                    
+                    if self.is_red(uncle) {
+                        // Case 1: Uncle is red
+                        self.set_color(parent, 0); // Black
+                        self.set_color(uncle, 0); // Black
+                        self.set_color(grandparent, 1); // Red
+                        current = grandparent;
+                    } else {
+                        // Case 2 & 3: Uncle is black
+                        if !self.is_left_child(current) {
+                            // Case 2: Current is right child
+                            current = parent;
+                            self.rotate_left(current);
+                        }
+                        // Case 3: Current is left child
+                        let new_parent = self.tree.read(current).parent;
+                        self.set_color(new_parent, 0); // Black
+                        self.set_color(grandparent, 1); // Red
+                        self.rotate_right(grandparent);
+                    }
+                } else {
+                    let uncle = self.tree.read(grandparent).left;
+                    
+                    if self.is_red(uncle) {
+                        // Case 1: Uncle is red
+                        self.set_color(parent, 0); // Black
+                        self.set_color(uncle, 0); // Black
+                        self.set_color(grandparent, 1); // Red
+                        current = grandparent;
+                    } else {
+                        // Case 2 & 3: Uncle is black
+                        if self.is_left_child(current) {
+                            // Case 2: Current is left child
+                            current = parent;
+                            self.rotate_right(current);
+                        }
+                        // Case 3: Current is right child
+                        let new_parent = self.tree.read(current).parent;
+                        self.set_color(new_parent, 0); // Black
+                        self.set_color(grandparent, 1); // Red
+                        self.rotate_left(grandparent);
+                    }
+                }
+            };
+            
+            // Ensure root is black
+            let root = self.root.read();
+            self.set_color(root, 0); // Black
+        }
+    
+        fn is_red(ref self: ContractState, node_id: u64) -> bool {
+            if node_id == 0 {
+                return false; // Null nodes are considered black
+            }
+            self.tree.read(node_id).color == 1
+        }
+    
+        fn set_color(ref self: ContractState, node_id: u64, color: u8) {
+            if node_id == 0 {
+                return; // Can't set color of null node
+            }
+            let mut node = self.tree.read(node_id);
+            node.color = color;
+            self.tree.write(node_id, node);
+        }
+     }
 
     #[generate_trait]
     impl TreeRotations of TreeRotationsTrait {
