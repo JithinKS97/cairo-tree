@@ -2,10 +2,7 @@
 pub trait ITree<TContractState> {
     fn insert(ref self: TContractState, value: u64);
     fn get_root(self: @TContractState) -> u64;
-    fn get_value(self: @TContractState, node_id: u64) -> u64;
     fn traverse(ref self: TContractState);
-    fn get_left_child(self: @TContractState, node_id: u64) -> u64;
-    fn get_right_child(self: @TContractState, node_id: u64) -> u64;
     fn get_height(ref self: TContractState) -> u64;
     fn print_tree(ref self: TContractState);
 }
@@ -59,22 +56,8 @@ mod Tree {
             self.root.read()
         }
 
-        fn get_value(self: @ContractState, node_id: u64) -> u64 {
-            self.tree.read(node_id).value
-        }
-
         fn traverse(ref self: ContractState) {
             self.traverse_recursive(self.root.read());
-        }
-
-        fn get_left_child(self: @ContractState, node_id: u64) -> u64 {
-            let node_id = self.tree.read(node_id).left;
-            return self.tree.read(node_id).value;
-        }
-
-        fn get_right_child(self: @ContractState, node_id: u64) -> u64 {
-            let node_id = self.tree.read(node_id).right;
-            return self.tree.read(node_id).value;
         }
 
         fn get_height(ref self: ContractState) -> u64 {
