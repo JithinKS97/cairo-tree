@@ -439,6 +439,15 @@ mod Tree {
 
             let no_of_levels = self.find_height_impl(root_id) - 1;
 
+            if(no_of_levels == 0) {
+                let root_node = self.tree.read(root_id);
+                if(root_node.value < 10){
+                    print!("0");
+                }
+                println!("{}", root_node.value);
+                return;
+            }
+
             let mut middle_spacing = 3 * self.power(2, no_of_levels)
                 + 5 * self.power(2, no_of_levels - 1)
                 + 3 * (self.power(2, no_of_levels - 1) - 1);
