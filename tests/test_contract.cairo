@@ -110,22 +110,40 @@ fn test_deletion() {
 
     let dispatcher = IRBTreeDispatcher { contract_address };
 
+    dispatcher.insert(50);
+    dispatcher.insert(25);
+    dispatcher.insert(75);
     dispatcher.insert(10);
+    dispatcher.insert(40);
+    dispatcher.insert(60);
+    dispatcher.insert(90);
     dispatcher.insert(5);
     dispatcher.insert(15);
-    dispatcher.insert(3);
-    dispatcher.insert(7);
-    dispatcher.insert(13);
-    dispatcher.insert(17);
+    dispatcher.insert(30);
+    dispatcher.insert(45);
+    dispatcher.insert(55);
+    dispatcher.insert(65);
+    dispatcher.insert(80);
+    dispatcher.insert(95);
+
     dispatcher.display_tree();
 
-    dispatcher.delete(3);
+    dispatcher.delete(25);
     dispatcher.display_tree();
 
-    dispatcher.delete(7);
+    dispatcher.delete(75);
+    dispatcher.display_tree();
+
+    dispatcher.delete(50);
     dispatcher.display_tree();
 
     dispatcher.delete(5);
+    dispatcher.delete(15);
+    dispatcher.delete(45);
+    dispatcher.delete(65);
+    dispatcher.display_tree();
+
+    dispatcher.delete(30);
     dispatcher.display_tree();
 }
 
