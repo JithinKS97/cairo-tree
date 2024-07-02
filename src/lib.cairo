@@ -14,7 +14,7 @@ const RED: u8 = 1;
 
 #[starknet::contract]
 mod RBTree {
-    use super::{ BLACK, RED };
+    use super::{BLACK, RED};
     use core::traits::TryInto;
     use core::traits::IndexView;
     use tree::IRBTree;
@@ -96,7 +96,7 @@ mod RBTree {
 
             self.traverse_postorder_from_node(current_node.right);
             println!("{}", current_node.value);
-            self.traverse_postorder_from_node(current_node.left);   
+            self.traverse_postorder_from_node(current_node.left);
         }
 
         fn find_node(ref self: ContractState, current: felt252, value: u256) -> felt252 {
@@ -254,12 +254,12 @@ mod RBTree {
             if node_to_delete == 0 {
                 return; // Node not found
             }
-        
+
             let mut y = node_to_delete;
             let mut y_original_color = self.tree.read(y).color;
             let mut x: felt252 = 0;
             let mut x_parent: felt252 = 0;
-        
+
             if self.tree.read(node_to_delete).left == 0 {
                 x = self.tree.read(node_to_delete).right;
                 x_parent = self.tree.read(node_to_delete).parent;
@@ -272,7 +272,7 @@ mod RBTree {
                 y = self.minimum(self.tree.read(node_to_delete).right);
                 y_original_color = self.tree.read(y).color;
                 x = self.tree.read(y).right;
-                
+
                 if self.tree.read(y).parent == node_to_delete {
                     x_parent = y;
                 } else {
@@ -283,7 +283,7 @@ mod RBTree {
                     self.tree.write(y, y_node);
                     self.update_parent(self.tree.read(node_to_delete).right, y);
                 }
-        
+
                 self.transplant(node_to_delete, y);
                 let mut y_node = self.tree.read(y);
                 y_node.left = self.tree.read(node_to_delete).left;
@@ -291,85 +291,90 @@ mod RBTree {
                 self.tree.write(y, y_node);
                 self.update_parent(self.tree.read(node_to_delete).left, y);
             }
-        
+
             if y_original_color == BLACK {
                 self.delete_fixup(x, x_parent);
             }
-        
+
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
                 self.set_color(root, BLACK);
             }
         }
-        
+
         fn delete_fixup(ref self: ContractState, mut x: felt252, mut x_parent: felt252) {
-            while x != self.root.read() && (x == 0 || self.is_black(x)) {
-                if x == self.tree.read(x_parent).left {
-                    let mut w = self.tree.read(x_parent).right;
-                    if self.is_red(w) {
-                        self.set_color(w, BLACK);
-                        self.set_color(x_parent, RED);
-                        self.rotate_left(x_parent);
-                        w = self.tree.read(x_parent).right;
-                    }
-                    if (self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left)) &&
-                       (self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right)) {
-                        self.set_color(w, RED);
-                        x = x_parent;
-                        x_parent = self.get_parent(x);
-                    } else {
-                        if self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right) {
-                            if self.tree.read(w).left != 0 {
-                                self.set_color(self.tree.read(w).left, BLACK);
-                            }
-                            self.set_color(w, RED);
-                            self.rotate_right(w);
+            while x != self.root.read()
+                && (x == 0 || self.is_black(x)) {
+                    if x == self.tree.read(x_parent).left {
+                        let mut w = self.tree.read(x_parent).right;
+                        if self.is_red(w) {
+                            self.set_color(w, BLACK);
+                            self.set_color(x_parent, RED);
+                            self.rotate_left(x_parent);
                             w = self.tree.read(x_parent).right;
                         }
-                        self.set_color(w, self.tree.read(x_parent).color);
-                        self.set_color(x_parent, BLACK);
-                        if self.tree.read(w).right != 0 {
-                            self.set_color(self.tree.read(w).right, BLACK);
-                        }
-                        self.rotate_left(x_parent);
-                        x = self.root.read();
-                        break;
-                    }
-                } else {
-                    // Mirror case for right child
-                    let mut w = self.tree.read(x_parent).left;
-                    if self.is_red(w) {
-                        self.set_color(w, BLACK);
-                        self.set_color(x_parent, RED);
-                        self.rotate_right(x_parent);
-                        w = self.tree.read(x_parent).left;
-                    }
-                    if (self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right)) &&
-                       (self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left)) {
-                        self.set_color(w, RED);
-                        x = x_parent;
-                        x_parent = self.get_parent(x);
-                    } else {
-                        if self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left) {
+                        if (self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left))
+                            && (self.tree.read(w).right == 0
+                                || self.is_black(self.tree.read(w).right)) {
+                            self.set_color(w, RED);
+                            x = x_parent;
+                            x_parent = self.get_parent(x);
+                        } else {
+                            if self.tree.read(w).right == 0
+                                || self.is_black(self.tree.read(w).right) {
+                                if self.tree.read(w).left != 0 {
+                                    self.set_color(self.tree.read(w).left, BLACK);
+                                }
+                                self.set_color(w, RED);
+                                self.rotate_right(w);
+                                w = self.tree.read(x_parent).right;
+                            }
+                            self.set_color(w, self.tree.read(x_parent).color);
+                            self.set_color(x_parent, BLACK);
                             if self.tree.read(w).right != 0 {
                                 self.set_color(self.tree.read(w).right, BLACK);
                             }
-                            self.set_color(w, RED);
-                            self.rotate_left(w);
+                            self.rotate_left(x_parent);
+                            x = self.root.read();
+                            break;
+                        }
+                    } else {
+                        // Mirror case for right child
+                        let mut w = self.tree.read(x_parent).left;
+                        if self.is_red(w) {
+                            self.set_color(w, BLACK);
+                            self.set_color(x_parent, RED);
+                            self.rotate_right(x_parent);
                             w = self.tree.read(x_parent).left;
                         }
-                        self.set_color(w, self.tree.read(x_parent).color);
-                        self.set_color(x_parent, BLACK);
-                        if self.tree.read(w).left != 0 {
-                            self.set_color(self.tree.read(w).left, BLACK);
+                        if (self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right))
+                            && (self.tree.read(w).left == 0
+                                || self.is_black(self.tree.read(w).left)) {
+                            self.set_color(w, RED);
+                            x = x_parent;
+                            x_parent = self.get_parent(x);
+                        } else {
+                            if self.tree.read(w).left == 0
+                                || self.is_black(self.tree.read(w).left) {
+                                if self.tree.read(w).right != 0 {
+                                    self.set_color(self.tree.read(w).right, BLACK);
+                                }
+                                self.set_color(w, RED);
+                                self.rotate_left(w);
+                                w = self.tree.read(x_parent).left;
+                            }
+                            self.set_color(w, self.tree.read(x_parent).color);
+                            self.set_color(x_parent, BLACK);
+                            if self.tree.read(w).left != 0 {
+                                self.set_color(self.tree.read(w).left, BLACK);
+                            }
+                            self.rotate_right(x_parent);
+                            x = self.root.read();
+                            break;
                         }
-                        self.rotate_right(x_parent);
-                        x = self.root.read();
-                        break;
                     }
-                }
-            };
+                };
             if x != 0 {
                 self.set_color(x, BLACK);
             }
@@ -558,13 +563,48 @@ mod RBTree {
 
     #[generate_trait]
     impl PrintTree of PrintTreeTrait {
+        fn get_filled_position_in_levels(ref self: ContractState) -> Array<Array<(felt252, u256)>> {
+            let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
+            let root_id = self.root.read();
+            let initial_level = 0;
+            let mut current_level = 0;
+            let mut filled_position_in_levels: Array<Array<(felt252, u256)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(felt252, u256)> = ArrayTrait::new();
+
+            self.collect_position_and_levels_of_nodes(root_id, 0, initial_level);
+            queue.append((root_id, 0));
+
+            while !queue
+                .is_empty() {
+                    let (node_id, level) = queue.pop_front().unwrap();
+                    let node = self.tree.read(node_id);
+
+                    if level > current_level {
+                        current_level = level;
+                        filled_position_in_levels.append(filled_position_in_level);
+                        filled_position_in_level = ArrayTrait::new();
+                    }
+
+                    let position = self.node_position.read(node_id);
+
+                    filled_position_in_level.append((node_id, position));
+
+                    if node.left != 0 {
+                        queue.append((node.left, current_level + 1));
+                    }
+
+                    if node.right != 0 {
+                        queue.append((node.right, current_level + 1));
+                    }
+                };
+            filled_position_in_levels.append(filled_position_in_level);
+            return filled_position_in_levels;
+        }
+
         fn render_tree_structure(ref self: ContractState, node_id: felt252) {
             println!("");
 
-            let root_id = self.root.read();
-            let initial_level = 0;
-
-            self.collect_position_and_levels_of_nodes(root_id, 0, initial_level);
+            let filled_position_in_levels = self.get_filled_position_in_levels();
 
             let root_id = self.root.read();
 
@@ -591,34 +631,7 @@ mod RBTree {
 
             let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
             queue.append((root_id, 0));
-            let mut current_level = 0;
-            let mut filled_position_in_levels: Array<Array<(felt252, u256)>> = ArrayTrait::new();
-            let mut filled_position_in_level: Array<(felt252, u256)> = ArrayTrait::new();
 
-            while !queue
-                .is_empty() {
-                    let (node_id, level) = queue.pop_front().unwrap();
-                    let node = self.tree.read(node_id);
-
-                    if level > current_level {
-                        current_level = level;
-                        filled_position_in_levels.append(filled_position_in_level);
-                        filled_position_in_level = ArrayTrait::new();
-                    }
-
-                    let position = self.node_position.read(node_id);
-
-                    filled_position_in_level.append((node_id, position));
-
-                    if node.left != 0 {
-                        queue.append((node.left, current_level + 1));
-                    }
-
-                    if node.right != 0 {
-                        queue.append((node.right, current_level + 1));
-                    }
-                };
-            filled_position_in_levels.append(filled_position_in_level);
             let all_nodes = self.construct_list(@filled_position_in_levels);
 
             let mut i = 0;
@@ -684,57 +697,28 @@ mod RBTree {
         }
 
         fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
+            if(self.root.read() == 0) {
+                return ArrayTrait::new();
+            }
+            let filled_position_in_levels_original = self.get_filled_position_in_levels();
             let mut filled_position_in_levels: Array<Array<(u256, u8, u256)>> = ArrayTrait::new();
             let mut filled_position_in_level: Array<(u256, u8, u256)> = ArrayTrait::new();
-
-            let root_id = self.root.read();
-            let initial_level = 0;
-
-            self.collect_position_and_levels_of_nodes(root_id, 0, initial_level);
-
-            let root_id = self.root.read();
-
-            if root_id == 0 {
-                return filled_position_in_levels;
-            }
-
-            let no_of_levels = self.find_height_impl(root_id) - 1;
-
-            if (no_of_levels == 0) {
-                let root = self.tree.read(root_id);
-                filled_position_in_level.append((root.value, root.color, 0));
-                filled_position_in_levels.append(filled_position_in_level);
-                return filled_position_in_levels;
-            }
-
-            let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
-            queue.append((root_id, 0));
-            let mut current_level = 0;
-
-            while !queue
-                .is_empty() {
-                    let (node_id, level) = queue.pop_front().unwrap();
-
-                    if level > current_level {
-                        current_level = level;
-                        filled_position_in_levels.append(filled_position_in_level);
-                        filled_position_in_level = ArrayTrait::new();
-                    }
-
-                    let position = self.node_position.read(node_id);
-                    let node = self.tree.read(node_id);
-
-                    filled_position_in_level.append((node.value, node.color, position));
-
-                    if node.left != 0 {
-                        queue.append((node.left, current_level + 1));
-                    }
-
-                    if node.right != 0 {
-                        queue.append((node.right, current_level + 1));
-                    }
+            let mut i = 0;
+            while i < filled_position_in_levels_original
+                .len() {
+                    let level = filled_position_in_levels_original.at(i.try_into().unwrap());
+                    let mut j = 0;
+                    while j < level
+                        .len() {
+                            let (node_id, position) = level.at(j.try_into().unwrap());
+                            let node = self.tree.read(*node_id);
+                            filled_position_in_level.append((node.value, node.color, *position));
+                            j += 1;
+                        };
+                    filled_position_in_levels.append(filled_position_in_level);
+                    filled_position_in_level = ArrayTrait::new();
+                    i += 1;
                 };
-            filled_position_in_levels.append(filled_position_in_level);
             return filled_position_in_levels;
         }
 
