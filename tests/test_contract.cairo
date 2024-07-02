@@ -107,7 +107,7 @@ fn test_insert_causes_recoloring_and_rotation() {
 // Test Deletion
 
 #[test]
-fn test_deletion_1() {
+fn test_multiple_deletions_round_1() {
     let contract_address = deploy_contract("RBTree");
 
     let dispatcher = IRBTreeDispatcher { contract_address };
@@ -172,7 +172,7 @@ fn test_deletion_1() {
 }
 
 #[test]
-fn test_deletion_2() {
+fn test_multiple_deletions_round_2() {
     let contract_address = deploy_contract("RBTree");
 
     let dispatcher = IRBTreeDispatcher { contract_address };
