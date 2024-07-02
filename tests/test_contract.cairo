@@ -116,5 +116,29 @@ fn test_insert_consecutive_recoloring() {
     dispatcher.insert(40);
     dispatcher.insert(50);
 
-    dispatcher.display_tree();
+    let (value_20, color_20, pos_20) = *dispatcher.get_tree_structure().at(0).at(0);
+    let (value_10, color_10, pos_10) = *dispatcher.get_tree_structure().at(1).at(0);
+    let (value_40, color_40, pos_40) = *dispatcher.get_tree_structure().at(1).at(1);
+    let (value_30, color_30, pos_30) = *dispatcher.get_tree_structure().at(2).at(0);
+    let (value_50, color_50, pos_50) = *dispatcher.get_tree_structure().at(2).at(1);
+
+    assert(value_20 == 20, 'Invalid value');
+    assert(color_20 == 0, 'Invalid color');
+    assert(pos_20 == 0, 'Invalid position');
+
+    assert(value_10 == 10, 'Invalid value');
+    assert(color_10 == 0, 'Invalid color');
+    assert(pos_10 == 0, 'Invalid position');
+
+    assert(value_40 == 40, 'Invalid value');
+    assert(color_40 == 0, 'Invalid color');
+    assert(pos_40 == 1, 'Invalid position');
+
+    assert(value_30 == 30, 'Invalid value');
+    assert(color_30 == 1, 'Invalid color');
+    assert(pos_30 == 2, 'Invalid position');
+
+    assert(value_50 == 50, 'Invalid value');
+    assert(color_50 == 1, 'Invalid color');
+    assert(pos_50 == 3, 'Invalid position');
 }
