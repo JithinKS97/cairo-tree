@@ -603,97 +603,134 @@ mod RBTree {
 
         fn render_tree_structure(ref self: ContractState, node_id: felt252) {
             println!("");
-
-            let filled_position_in_levels = self.get_filled_position_in_levels();
-
+        
             let root_id = self.root.read();
-
             if root_id == 0 {
                 println!("Tree is empty");
                 return;
             }
-
-            let no_of_levels = self.find_height_impl(root_id) - 1;
-
-            if (no_of_levels == 0) {
-                let root_node = self.tree.read(root_id);
-                if (root_node.value < 10) {
-                    print!("0");
-                }
-                println!("{}B", root_node.value);
+        
+            let tree_height = self.find_height_impl(root_id);
+            let no_of_levels = tree_height - 1;
+        
+            if no_of_levels == 0 {
+                self.render_single_node(root_id);
                 return;
             }
-
-            let mut middle_spacing = 3 * self.power(2, no_of_levels)
+        
+            let filled_position_in_levels = self.get_filled_position_in_levels();
+            let all_nodes = self.construct_list(@filled_position_in_levels);
+        
+            let (mut middle_spacing, mut begin_spacing) = self.calculate_initial_spacing(no_of_levels);
+        
+            self.render_tree_levels(all_nodes, no_of_levels, ref middle_spacing, ref begin_spacing);
+        
+            println!("");
+        }
+        
+        fn render_single_node(ref self: ContractState, node_id: felt252) {
+            let root_node = self.tree.read(node_id);
+            if root_node.value < 10 {
+                print!("0");
+            }
+            println!("{}B", root_node.value);
+        }
+        
+        fn calculate_initial_spacing(ref self: ContractState, no_of_levels: u256) -> (u256, u256) {
+            let middle_spacing = 3 * self.power(2, no_of_levels)
                 + 5 * self.power(2, no_of_levels - 1)
                 + 3 * (self.power(2, no_of_levels - 1) - 1);
-            let mut begin_spacing = (middle_spacing - 3) / 2;
-
-            let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
-            queue.append((root_id, 0));
-
-            let all_nodes = self.construct_list(@filled_position_in_levels);
-
-            let mut i = 0;
-
-            while i < all_nodes
-                .len()
-                .try_into()
-                .unwrap() {
-                    let level = all_nodes.at(i.try_into().unwrap());
-                    let mut j = 0;
-
-                    while j < level
-                        .len() {
-                            let node_id = level.at(j.try_into().unwrap());
-
-                            if (j == 0) {
-                                self.print_n_spaces(begin_spacing);
-                            } else {
-                                if (i == no_of_levels) {
-                                    if (j % 2 == 0) {
-                                        self.print_n_spaces(3);
-                                    } else {
-                                        self.print_n_spaces(5);
-                                    }
-                                } else {
-                                    self.print_n_spaces(middle_spacing);
-                                }
-                            }
-
-                            if (*node_id == 0) {
-                                print!("...");
-                            } else {
-                                let node = self.tree.read(*node_id);
-                                let node_value = node.value;
-                                let node_color = node.color;
-
-                                if (node_value < 10) {
-                                    print!("0");
-                                }
-
-                                print!("{}", node_value);
-
-                                if (node_color == BLACK) {
-                                    print!("B");
-                                } else {
-                                    print!("R");
-                                }
-                            }
-
-                            j += 1;
-                        };
-
-                    if (i < no_of_levels) {
-                        middle_spacing = begin_spacing;
-                        begin_spacing = (begin_spacing - 3) / 2;
-                    }
-
-                    println!("");
-                    i += 1;
-                };
-
-            println!("");
+            let begin_spacing = (middle_spacing - 3) / 2;
+            (middle_spacing, begin_spacing)
+        }
+        
+        fn render_tree_levels(
+            ref self: ContractState, 
+            all_nodes: Array<Array<felt252>>, 
+            no_of_levels: u256, 
+            ref middle_spacing: u256, 
+            ref begin_spacing: u256
+        ) {
+            let mut i = 0_u256;
+            loop {
+                if i >= all_nodes.len().try_into().unwrap() {
+                    break;
+                }
+                let level = all_nodes.at(i.try_into().unwrap());
+                self.render_level(level, i, no_of_levels, begin_spacing, middle_spacing);
+        
+                if i < no_of_levels.try_into().unwrap() {
+                    middle_spacing = begin_spacing;
+                    begin_spacing = (begin_spacing - 3) / 2;
+                }
+        
+                println!("");
+                i += 1;
+            }
+        }
+        
+        fn render_level(
+            ref self: ContractState, 
+            level: @Array<felt252>, 
+            level_index: u256, 
+            no_of_levels: u256, 
+            begin_spacing: u256, 
+            middle_spacing: u256
+        ) {
+            let mut j = 0_u256;
+            loop {
+                if j >= level.len().try_into().unwrap() {
+                    break;
+                }
+                let node_id = *level.at(j.try_into().unwrap());
+        
+                self.print_node_spacing(j, level_index, no_of_levels, begin_spacing, middle_spacing);
+                self.print_node(node_id);
+        
+                j += 1;
+            }
+        }
+        
+        fn print_node_spacing(
+            ref self: ContractState, 
+            node_index: u256, 
+            level_index: u256, 
+            no_of_levels: u256, 
+            begin_spacing: u256, 
+            middle_spacing: u256
+        ) {
+            if node_index == 0 {
+                self.print_n_spaces(begin_spacing);
+            } else if level_index == no_of_levels {
+                if node_index % 2 == 0 {
+                    self.print_n_spaces(3);
+                } else {
+                    self.print_n_spaces(5);
+                }
+            } else {
+                self.print_n_spaces(middle_spacing);
+            }
+        }
+        
+        fn print_node(ref self: ContractState, node_id: felt252) {
+            if node_id == 0 {
+                print!("...");
+            } else {
+                let node = self.tree.read(node_id);
+                let node_value = node.value;
+                let node_color = node.color;
+        
+                if node_value < 10 {
+                    print!("0");
+                }
+                print!("{}", node_value);
+        
+                if node_color == BLACK {
+                    print!("B");
+                } else {
+                    print!("R");
+                }
+            }
         }
 
         fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
