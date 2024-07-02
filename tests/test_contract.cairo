@@ -19,28 +19,15 @@ fn test_increase_balance() {
 
     let dispatcher = ITreeDispatcher { contract_address };
 
-    dispatcher.insert(1);
-    dispatcher.print_tree();
 
-    dispatcher.insert(2);
-    dispatcher.print_tree();
-
-    dispatcher.insert(3);
-    dispatcher.print_tree();
-
-    dispatcher.insert(4);
-    dispatcher.print_tree();
-
+    dispatcher.insert(10);
     dispatcher.insert(5);
-    dispatcher.print_tree();
-
-    dispatcher.insert(6);
-    dispatcher.print_tree();
-
+    dispatcher.insert(15);
+    dispatcher.insert(3);
     dispatcher.insert(7);
+    dispatcher.insert(13);
+    dispatcher.insert(17);
     dispatcher.print_tree();
-
-    assert(10 == 10, 'Invalid value');
 }
 
 // #[test]
