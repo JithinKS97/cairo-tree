@@ -1,12 +1,12 @@
 #[starknet::interface]
 pub trait IRBTree<TContractState> {
-    fn insert(ref self: TContractState, value: u64);
-    fn delete(ref self: TContractState, value: u64);
+    fn insert(ref self: TContractState, value: u256);
+    fn delete(ref self: TContractState, value: u256);
     fn get_root(self: @TContractState) -> felt252;
     fn traverse_postorder(ref self: TContractState);
-    fn get_height(ref self: TContractState) -> u64;
+    fn get_height(ref self: TContractState) -> u256;
     fn display_tree(ref self: TContractState);
-    fn get_tree_structure(ref self: TContractState) -> Array<Array<(u64, u8, u64)>>;
+    fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, u8, u256)>>;
 }
 
 const BLACK: u8 = 0;
@@ -24,13 +24,13 @@ mod RBTree {
     struct Storage {
         root: felt252,
         tree: LegacyMap::<felt252, Node>,
-        node_position: LegacyMap::<felt252, u64>,
+        node_position: LegacyMap::<felt252, u256>,
         next_id: felt252,
     }
 
     #[derive(Copy, Drop, Serde, starknet::Store)]
     struct Node {
-        value: u64,
+        value: u256,
         left: felt252,
         right: felt252,
         parent: felt252,
@@ -45,7 +45,7 @@ mod RBTree {
 
     #[abi(embed_v0)]
     impl RBTree of super::IRBTree<ContractState> {
-        fn insert(ref self: ContractState, value: u64) {
+        fn insert(ref self: ContractState, value: u256) {
             let new_node_id = self.create_new_node(value);
 
             if self.root.read() == 0 {
@@ -57,7 +57,7 @@ mod RBTree {
             self.balance_after_insertion(new_node_id);
         }
 
-        fn delete(ref self: ContractState, value: u64) {
+        fn delete(ref self: ContractState, value: u256) {
             let node_to_delete_id = self.find_node(self.root.read(), value);
             if node_to_delete_id == 0 {
                 return;
@@ -73,7 +73,7 @@ mod RBTree {
             self.traverse_postorder_from_node(self.root.read());
         }
 
-        fn get_height(ref self: ContractState) -> u64 {
+        fn get_height(ref self: ContractState) -> u256 {
             return self.find_height_impl(self.root.read());
         }
 
@@ -81,7 +81,7 @@ mod RBTree {
             self.render_tree_structure(self.root.read());
         }
 
-        fn get_tree_structure(ref self: ContractState) -> Array<Array<(u64, u8, u64)>> {
+        fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
             self.get_tree_structure_impl()
         }
     }
@@ -99,7 +99,7 @@ mod RBTree {
             self.traverse_postorder_from_node(current_node.left);   
         }
 
-        fn find_node(ref self: ContractState, current: felt252, value: u64) -> felt252 {
+        fn find_node(ref self: ContractState, current: felt252, value: u256) -> felt252 {
             if current == 0 {
                 return 0;
             }
@@ -115,7 +115,7 @@ mod RBTree {
         }
 
         fn find_and_attach_node(
-            ref self: ContractState, current_id: felt252, new_node_id: felt252, value: u64
+            ref self: ContractState, current_id: felt252, new_node_id: felt252, value: u256
         ) {
             let mut current_node = self.tree.read(current_id);
 
@@ -148,7 +148,7 @@ mod RBTree {
             }
         }
 
-        fn create_new_node(ref self: ContractState, value: u64) -> felt252 {
+        fn create_new_node(ref self: ContractState, value: u256) -> felt252 {
             let new_node_id = self.next_id.read();
             self.next_id.write(new_node_id + 1);
 
@@ -169,27 +169,6 @@ mod RBTree {
             return parent.left == node_id;
         }
 
-        fn ensure_root_is_black(ref self: ContractState) {
-            let root = self.root.read();
-            self.set_color(root, BLACK); // Black
-        }
-
-        fn is_red(ref self: ContractState, node_id: felt252) -> bool {
-            if node_id == 0 {
-                return false; // Null nodes are considered black
-            }
-            self.tree.read(node_id).color == RED
-        }
-
-        fn set_color(ref self: ContractState, node_id: felt252, color: u8) {
-            if node_id == 0 {
-                return; // Can't set color of null node
-            }
-            let mut node = self.tree.read(node_id);
-            node.color = color;
-            self.tree.write(node_id, node);
-        }
-
         fn update_left(ref self: ContractState, node_id: felt252, left_id: felt252) {
             let mut node = self.tree.read(node_id);
             node.left = left_id;
@@ -208,7 +187,7 @@ mod RBTree {
             self.tree.write(node_id, node);
         }
 
-        fn find_height_impl(ref self: ContractState, node_id: felt252) -> u64 {
+        fn find_height_impl(ref self: ContractState, node_id: felt252) -> u256 {
             let node = self.tree.read(node_id);
 
             if (node_id == 0) {
@@ -225,15 +204,7 @@ mod RBTree {
             }
         }
 
-        fn print_n_spaces(ref self: ContractState, n: u64) {
-            let mut i = 0;
-            while i < n {
-                print!(" ");
-                i += 1;
-            }
-        }
-
-        fn power(ref self: ContractState, base: u64, exponent: u64) -> u64 {
+        fn power(ref self: ContractState, base: u256, exponent: u256) -> u256 {
             let mut result = 1;
             let mut i = 0;
             while i < exponent {
@@ -253,6 +224,27 @@ mod RBTree {
 
         fn is_black(ref self: ContractState, node: felt252) -> bool {
             node == 0 || self.tree.read(node).color == BLACK
+        }
+
+        fn is_red(ref self: ContractState, node_id: felt252) -> bool {
+            if node_id == 0 {
+                return false;
+            }
+            self.tree.read(node_id).color == RED
+        }
+
+        fn ensure_root_is_black(ref self: ContractState) {
+            let root = self.root.read();
+            self.set_color(root, BLACK); // Black
+        }
+
+        fn set_color(ref self: ContractState, node_id: felt252, color: u8) {
+            if node_id == 0 {
+                return; // Can't set color of null node
+            }
+            let mut node = self.tree.read(node_id);
+            node.color = color;
+            self.tree.write(node_id, node);
         }
     }
 
@@ -597,11 +589,11 @@ mod RBTree {
                 + 3 * (self.power(2, no_of_levels - 1) - 1);
             let mut begin_spacing = (middle_spacing - 3) / 2;
 
-            let mut queue: Array<(felt252, u64)> = ArrayTrait::new();
+            let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
             queue.append((root_id, 0));
             let mut current_level = 0;
-            let mut filled_position_in_levels: Array<Array<(felt252, u64)>> = ArrayTrait::new();
-            let mut filled_position_in_level: Array<(felt252, u64)> = ArrayTrait::new();
+            let mut filled_position_in_levels: Array<Array<(felt252, u256)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(felt252, u256)> = ArrayTrait::new();
 
             while !queue
                 .is_empty() {
@@ -691,9 +683,9 @@ mod RBTree {
             println!("");
         }
 
-        fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u64, u8, u64)>> {
-            let mut filled_position_in_levels: Array<Array<(u64, u8, u64)>> = ArrayTrait::new();
-            let mut filled_position_in_level: Array<(u64, u8, u64)> = ArrayTrait::new();
+        fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
+            let mut filled_position_in_levels: Array<Array<(u256, u8, u256)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(u256, u8, u256)> = ArrayTrait::new();
 
             let root_id = self.root.read();
             let initial_level = 0;
@@ -716,7 +708,7 @@ mod RBTree {
                 return filled_position_in_levels;
             }
 
-            let mut queue: Array<(felt252, u64)> = ArrayTrait::new();
+            let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
             queue.append((root_id, 0));
             let mut current_level = 0;
 
@@ -748,7 +740,7 @@ mod RBTree {
         }
 
         fn construct_list(
-            ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u64)>>
+            ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u256)>>
         ) -> Array<Array<felt252>> {
             let no_of_levels = self.get_height();
             let mut i = 0;
@@ -763,7 +755,7 @@ mod RBTree {
         }
 
         fn get_level_list(
-            ref self: ContractState, level: u64, filled_levels: @Array<(felt252, u64)>
+            ref self: ContractState, level: u256, filled_levels: @Array<(felt252, u256)>
         ) -> Array<felt252> {
             let mut i = 0;
             let max_no_of_nodes = self.power(2, level);
@@ -777,7 +769,7 @@ mod RBTree {
         }
 
         fn get_if_node_id_present(
-            ref self: ContractState, filled_levels: @Array<(felt252, u64)>, position: u64
+            ref self: ContractState, filled_levels: @Array<(felt252, u256)>, position: u256
         ) -> felt252 {
             let mut i = 0;
             let mut found_node_id = 0;
@@ -795,7 +787,7 @@ mod RBTree {
         }
 
         fn collect_position_and_levels_of_nodes(
-            ref self: ContractState, node_id: felt252, position: u64, level: u64
+            ref self: ContractState, node_id: felt252, position: u256, level: u256
         ) {
             if node_id == 0 {
                 return;
@@ -807,6 +799,14 @@ mod RBTree {
 
             self.collect_position_and_levels_of_nodes(node.left, position * 2, level + 1);
             self.collect_position_and_levels_of_nodes(node.right, position * 2 + 1, level + 1);
+        }
+
+        fn print_n_spaces(ref self: ContractState, n: u256) {
+            let mut i = 0;
+            while i < n {
+                print!(" ");
+                i += 1;
+            }
         }
     }
 }
