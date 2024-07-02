@@ -103,3 +103,47 @@ fn test_insert_causes_recoloring_and_rotation() {
     assert(color_15 == 0, 'Invalid color');
     assert(pos_15 == 0, 'Invalid position');
 }
+
+#[test]
+fn test_deletion() {
+    let contract_address = deploy_contract("RBTree");
+
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(50);
+    dispatcher.insert(25);
+    dispatcher.insert(75);
+    dispatcher.insert(10);
+    dispatcher.insert(40);
+    dispatcher.insert(60);
+    dispatcher.insert(90);
+    dispatcher.insert(5);
+    dispatcher.insert(15);
+    dispatcher.insert(30);
+    dispatcher.insert(45);
+    dispatcher.insert(55);
+    dispatcher.insert(65);
+    dispatcher.insert(80);
+    dispatcher.insert(95);
+
+    dispatcher.display_tree();
+
+    dispatcher.delete(25);
+    dispatcher.display_tree();
+
+    dispatcher.delete(75);
+    dispatcher.display_tree();
+
+    dispatcher.delete(50);
+    dispatcher.display_tree();
+
+    dispatcher.delete(5);
+    dispatcher.delete(15);
+    dispatcher.delete(45);
+    dispatcher.delete(65);
+    dispatcher.display_tree();
+
+    dispatcher.delete(30);
+    dispatcher.display_tree();
+}
+
