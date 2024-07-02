@@ -6,6 +6,7 @@ pub trait IRBTree<TContractState> {
     fn traverse_postorder(ref self: TContractState);
     fn get_height(ref self: TContractState) -> u64;
     fn display_tree(ref self: TContractState);
+    fn get_tree_structure(ref self: TContractState) -> Array<Array<(u64, u8, u64)>>;
 }
 
 const BLACK: u8 = 0;
@@ -78,6 +79,10 @@ mod RBTree {
 
         fn display_tree(ref self: ContractState) {
             self.render_tree_structure(self.root.read());
+        }
+
+        fn get_tree_structure(ref self: ContractState) -> Array<Array<(u64, u8, u64)>> {
+            self.get_tree_structure_impl()
         }
     }
 
@@ -576,7 +581,7 @@ mod RBTree {
                 if (root_node.value < 10) {
                     print!("0");
                 }
-                println!("{}", root_node.value);
+                println!("{}B", root_node.value);
                 return;
             }
 
@@ -677,6 +682,62 @@ mod RBTree {
                 };
 
             println!("");
+        }
+
+        fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u64, u8, u64)>> {
+            let mut filled_position_in_levels: Array<Array<(u64, u8, u64)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(u64, u8, u64)> = ArrayTrait::new();
+
+            let root_id = self.root.read();
+            let initial_level = 0;
+
+            self.collect_position_and_levels_of_nodes(root_id, 0, initial_level);
+
+            let root_id = self.root.read();
+
+            if root_id == 0 {
+                println!("Tree is empty");
+                return filled_position_in_levels;
+            }
+
+            let no_of_levels = self.find_height_impl(root_id) - 1;
+
+            if (no_of_levels == 0) {
+                let root = self.tree.read(root_id);
+                filled_position_in_level.append((root.value, root.color, 0));
+                filled_position_in_levels.append(filled_position_in_level);
+                return filled_position_in_levels;
+            }
+
+            let mut queue: Array<(felt252, u64)> = ArrayTrait::new();
+            queue.append((root_id, 0));
+            let mut current_level = 0;
+
+            while !queue
+                .is_empty() {
+                    let (node_id, level) = queue.pop_front().unwrap();
+
+                    if level > current_level {
+                        current_level = level;
+                        filled_position_in_levels.append(filled_position_in_level);
+                        filled_position_in_level = ArrayTrait::new();
+                    }
+
+                    let position = self.node_position.read(node_id);
+                    let node = self.tree.read(node_id);
+
+                    filled_position_in_level.append((node.value, node.color, position));
+
+                    if node.left != 0 {
+                        queue.append((node.left, current_level + 1));
+                    }
+
+                    if node.right != 0 {
+                        queue.append((node.right, current_level + 1));
+                    }
+                };
+            filled_position_in_levels.append(filled_position_in_level);
+            return filled_position_in_levels;
         }
 
         fn construct_list(
