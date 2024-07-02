@@ -2,7 +2,7 @@
 pub trait ITree<TContractState> {
     fn insert(ref self: TContractState, value: u64);
     fn delete(ref self: TContractState, value: u64);
-    fn get_root(self: @TContractState) -> u64;
+    fn get_root(self: @TContractState) -> felt252;
     fn traverse(ref self: TContractState);
     fn get_height(ref self: TContractState) -> u64;
     fn print_tree(ref self: TContractState);
@@ -17,18 +17,18 @@ mod Tree {
     use core::option::OptionTrait;
     #[storage]
     struct Storage {
-        root: u64,
-        tree: LegacyMap::<u64, Node>,
-        node_position: LegacyMap::<u64, u64>,
-        next_id: u64,
+        root: felt252,
+        tree: LegacyMap::<felt252, Node>,
+        node_position: LegacyMap::<felt252, u64>,
+        next_id: felt252,
     }
 
     #[derive(Copy, Drop, Serde, starknet::Store)]
     struct Node {
         value: u64,
-        left: u64,
-        right: u64,
-        parent: u64,
+        left: felt252,
+        right: felt252,
+        parent: felt252,
         color: u8,
     }
 
@@ -60,7 +60,7 @@ mod Tree {
             self.delete_node(node_to_delete);
         }
 
-        fn get_root(self: @ContractState) -> u64 {
+        fn get_root(self: @ContractState) -> felt252 {
             self.root.read()
         }
 
@@ -79,19 +79,18 @@ mod Tree {
 
     #[generate_trait]
     impl InternalFunctions of InternalFunctionsTrait {
-        fn traverse_recursive(ref self: ContractState, current_id: u64) {
+        fn traverse_recursive(ref self: ContractState, current_id: felt252) {
             if (current_id == 0) {
                 return;
             }
             let current_node = self.tree.read(current_id);
 
-            // in-order traversal prints in ascending order
-            self.traverse_recursive(current_node.left);
-            println!("{}", current_node.value);
             self.traverse_recursive(current_node.right);
+            println!("{}", current_node.value);
+            self.traverse_recursive(current_node.left);   
         }
 
-        fn find_node(ref self: ContractState, current: u64, value: u64) -> u64 {
+        fn find_node(ref self: ContractState, current: felt252, value: u64) -> felt252 {
             if current == 0 {
                 return 0;
             }
@@ -107,7 +106,7 @@ mod Tree {
         }
 
         fn insert_recursive(
-            ref self: ContractState, current_id: u64, new_node_id: u64, value: u64
+            ref self: ContractState, current_id: felt252, new_node_id: felt252, value: u64
         ) {
             let mut current_node = self.tree.read(current_id);
 
@@ -140,7 +139,7 @@ mod Tree {
             }
         }
 
-        fn create_new_node(ref self: ContractState, value: u64) -> u64 {
+        fn create_new_node(ref self: ContractState, value: u64) -> felt252 {
             let new_node_id = self.next_id.read();
             self.next_id.write(new_node_id + 1);
 
@@ -155,7 +154,7 @@ mod Tree {
             return new_node_id;
         }
 
-        fn is_left_child(ref self: ContractState, node_id: u64) -> bool {
+        fn is_left_child(ref self: ContractState, node_id: felt252) -> bool {
             let parent_id = self.tree.read(node_id).parent;
             let parent = self.tree.read(parent_id);
             return parent.left == node_id;
@@ -166,14 +165,14 @@ mod Tree {
             self.set_color(root, 0); // Black
         }
 
-        fn is_red(ref self: ContractState, node_id: u64) -> bool {
+        fn is_red(ref self: ContractState, node_id: felt252) -> bool {
             if node_id == 0 {
                 return false; // Null nodes are considered black
             }
             self.tree.read(node_id).color == 1
         }
 
-        fn set_color(ref self: ContractState, node_id: u64, color: u8) {
+        fn set_color(ref self: ContractState, node_id: felt252, color: u8) {
             if node_id == 0 {
                 return; // Can't set color of null node
             }
@@ -182,25 +181,25 @@ mod Tree {
             self.tree.write(node_id, node);
         }
 
-        fn update_left(ref self: ContractState, node_id: u64, left_id: u64) {
+        fn update_left(ref self: ContractState, node_id: felt252, left_id: felt252) {
             let mut node = self.tree.read(node_id);
             node.left = left_id;
             self.tree.write(node_id, node);
         }
 
-        fn update_right(ref self: ContractState, node_id: u64, right_id: u64) {
+        fn update_right(ref self: ContractState, node_id: felt252, right_id: felt252) {
             let mut node = self.tree.read(node_id);
             node.right = right_id;
             self.tree.write(node_id, node);
         }
 
-        fn update_parent(ref self: ContractState, node_id: u64, parent_id: u64) {
+        fn update_parent(ref self: ContractState, node_id: felt252, parent_id: felt252) {
             let mut node = self.tree.read(node_id);
             node.parent = parent_id;
             self.tree.write(node_id, node);
         }
 
-        fn find_height_impl(ref self: ContractState, node_id: u64) -> u64 {
+        fn find_height_impl(ref self: ContractState, node_id: felt252) -> u64 {
             let node = self.tree.read(node_id);
 
             if (node_id == 0) {
@@ -235,22 +234,26 @@ mod Tree {
             return result;
         }
 
-        fn get_parent(ref self: ContractState, node: u64) -> u64 {
-            if node == 0 { 0 } else { self.tree.read(node).parent }
+        fn get_parent(ref self: ContractState, node: felt252) -> felt252 {
+            if node == 0 {
+                0
+            } else {
+                self.tree.read(node).parent
+            }
         }
 
-        fn is_black(ref self: ContractState, node: u64) -> bool {
+        fn is_black(ref self: ContractState, node: felt252) -> bool {
             node == 0 || self.tree.read(node).color == 0
         }
     }
 
     #[generate_trait]
     impl DeleteBalance of DeleteBalanceTrait {
-        fn delete_node(ref self: ContractState, node_id: u64) {
+        fn delete_node(ref self: ContractState, node_id: felt252) {
             let node = self.tree.read(node_id);
             let mut original_color = node.color;
             let mut replacement_node = 0;
-        
+
             if node.left == 0 {
                 replacement_node = node.right;
                 self.transplant(node_id, node.right);
@@ -262,7 +265,7 @@ mod Tree {
                 let mut successor = self.tree.read(successor_id);
                 original_color = successor.color;
                 replacement_node = successor.right;
-        
+
                 if successor.parent != node_id {
                     self.transplant(successor_id, successor.right);
                     successor.right = node.right;
@@ -270,14 +273,14 @@ mod Tree {
                 } else {
                     replacement_node = successor_id;
                 }
-        
+
                 self.transplant(node_id, successor_id);
                 successor.left = node.left;
                 self.update_parent(node.left, successor_id);
                 successor.color = node.color;
                 self.tree.write(successor_id, successor);
             }
-        
+
             if original_color == 0 { // Black
                 if replacement_node != 0 && self.tree.read(replacement_node).color == 1 {
                     // If we replaced a black node with a red node, just recolor it black
@@ -287,7 +290,7 @@ mod Tree {
                     self.delete_fixup(replacement_node);
                 }
             }
-        
+
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
@@ -295,70 +298,76 @@ mod Tree {
             }
         }
 
-        fn delete_fixup(ref self: ContractState, mut node: u64) {
-            while node != self.root.read() && self.is_black(node) {
-                let parent = self.get_parent(node);
-                if parent == 0 { break; }
-        
-                if self.is_left_child(node) {
-                    let mut sibling = self.tree.read(parent).right;
-        
-                    if self.is_red(sibling) {
-                        self.set_color(sibling, 0);
-                        self.set_color(parent, 1);
-                        self.rotate_left(parent);
-                        sibling = self.tree.read(parent).right;
-                    }
-        
-                    if self.is_black(self.tree.read(sibling).left) && self.is_black(self.tree.read(sibling).right) {
-                        self.set_color(sibling, 1);
-                        node = parent;
-                    } else {
-                        if self.is_black(self.tree.read(sibling).right) {
-                            self.set_color(self.tree.read(sibling).left, 0);
-                            self.set_color(sibling, 1);
-                            self.rotate_right(sibling);
-                            sibling = self.tree.read(parent).right;
+        fn delete_fixup(ref self: ContractState, mut node: felt252) {
+            while node != self.root.read()
+                && self
+                    .is_black(node) {
+                        let parent = self.get_parent(node);
+                        if parent == 0 {
+                            break;
                         }
-                        self.set_color(sibling, self.tree.read(parent).color);
-                        self.set_color(parent, 0);
-                        self.set_color(self.tree.read(sibling).right, 0);
-                        self.rotate_left(parent);
-                        break;
-                    }
-                } else {
-                    // Mirror case for right child
-                    let mut sibling = self.tree.read(parent).left;
-        
-                    if self.is_red(sibling) {
-                        self.set_color(sibling, 0);
-                        self.set_color(parent, 1);
-                        self.rotate_right(parent);
-                        sibling = self.tree.read(parent).left;
-                    }
-        
-                    if self.is_black(self.tree.read(sibling).right) && self.is_black(self.tree.read(sibling).left) {
-                        self.set_color(sibling, 1);
-                        node = parent;
-                    } else {
-                        if self.is_black(self.tree.read(sibling).left) {
-                            self.set_color(self.tree.read(sibling).right, 0);
-                            self.set_color(sibling, 1);
-                            self.rotate_left(sibling);
-                            sibling = self.tree.read(parent).left;
+
+                        if self.is_left_child(node) {
+                            let mut sibling = self.tree.read(parent).right;
+
+                            if self.is_red(sibling) {
+                                self.set_color(sibling, 0);
+                                self.set_color(parent, 1);
+                                self.rotate_left(parent);
+                                sibling = self.tree.read(parent).right;
+                            }
+
+                            if self.is_black(self.tree.read(sibling).left)
+                                && self.is_black(self.tree.read(sibling).right) {
+                                self.set_color(sibling, 1);
+                                node = parent;
+                            } else {
+                                if self.is_black(self.tree.read(sibling).right) {
+                                    self.set_color(self.tree.read(sibling).left, 0);
+                                    self.set_color(sibling, 1);
+                                    self.rotate_right(sibling);
+                                    sibling = self.tree.read(parent).right;
+                                }
+                                self.set_color(sibling, self.tree.read(parent).color);
+                                self.set_color(parent, 0);
+                                self.set_color(self.tree.read(sibling).right, 0);
+                                self.rotate_left(parent);
+                                break;
+                            }
+                        } else {
+                            // Mirror case for right child
+                            let mut sibling = self.tree.read(parent).left;
+
+                            if self.is_red(sibling) {
+                                self.set_color(sibling, 0);
+                                self.set_color(parent, 1);
+                                self.rotate_right(parent);
+                                sibling = self.tree.read(parent).left;
+                            }
+
+                            if self.is_black(self.tree.read(sibling).right)
+                                && self.is_black(self.tree.read(sibling).left) {
+                                self.set_color(sibling, 1);
+                                node = parent;
+                            } else {
+                                if self.is_black(self.tree.read(sibling).left) {
+                                    self.set_color(self.tree.read(sibling).right, 0);
+                                    self.set_color(sibling, 1);
+                                    self.rotate_left(sibling);
+                                    sibling = self.tree.read(parent).left;
+                                }
+                                self.set_color(sibling, self.tree.read(parent).color);
+                                self.set_color(parent, 0);
+                                self.set_color(self.tree.read(sibling).left, 0);
+                                self.rotate_right(parent);
+                                break;
+                            }
                         }
-                        self.set_color(sibling, self.tree.read(parent).color);
-                        self.set_color(parent, 0);
-                        self.set_color(self.tree.read(sibling).left, 0);
-                        self.rotate_right(parent);
-                        break;
-                    }
-                }
-            };
+                    };
             self.set_color(node, 0);
         }
 
-        fn transplant(ref self: ContractState, u: u64, v: u64) {
+        fn transplant(ref self: ContractState, u: felt252, v: felt252) {
             let u_node = self.tree.read(u);
             if u_node.parent == 0 {
                 self.root.write(v);
@@ -372,7 +381,7 @@ mod Tree {
             }
         }
 
-        fn minimum(ref self: ContractState, node_id: u64) -> u64 {
+        fn minimum(ref self: ContractState, node_id: felt252) -> felt252 {
             let mut current = node_id;
             let mut node = self.tree.read(current);
             while node.left != 0 {
@@ -385,7 +394,7 @@ mod Tree {
 
     #[generate_trait]
     impl InsertBalance of InsertBalanceTrait {
-        fn balance_after_insertion(ref self: ContractState, node_id: u64) {
+        fn balance_after_insertion(ref self: ContractState, node_id: felt252) {
             let mut current = node_id;
             while current != self.root.read()
                 && self
@@ -403,8 +412,8 @@ mod Tree {
         }
 
         fn balance_left_case(
-            ref self: ContractState, current: u64, parent: u64, grandparent: u64
-        ) -> u64 {
+            ref self: ContractState, current: felt252, parent: felt252, grandparent: felt252
+        ) -> felt252 {
             let uncle = self.tree.read(grandparent).right;
 
             if self.is_red(uncle) {
@@ -415,8 +424,8 @@ mod Tree {
         }
 
         fn balance_right_case(
-            ref self: ContractState, current: u64, parent: u64, grandparent: u64
-        ) -> u64 {
+            ref self: ContractState, current: felt252, parent: felt252, grandparent: felt252
+        ) -> felt252 {
             let uncle = self.tree.read(grandparent).left;
 
             if self.is_red(uncle) {
@@ -427,8 +436,12 @@ mod Tree {
         }
 
         fn handle_red_uncle(
-            ref self: ContractState, current: u64, parent: u64, grandparent: u64, uncle: u64
-        ) -> u64 {
+            ref self: ContractState,
+            current: felt252,
+            parent: felt252,
+            grandparent: felt252,
+            uncle: felt252
+        ) -> felt252 {
             self.set_color(parent, 0); // Black
             self.set_color(uncle, 0); // Black
             self.set_color(grandparent, 1); // Red
@@ -436,8 +449,8 @@ mod Tree {
         }
 
         fn handle_black_uncle_left(
-            ref self: ContractState, current: u64, parent: u64, grandparent: u64
-        ) -> u64 {
+            ref self: ContractState, current: felt252, parent: felt252, grandparent: felt252
+        ) -> felt252 {
             let mut new_current = current;
             if !self.is_left_child(current) {
                 new_current = parent;
@@ -451,8 +464,8 @@ mod Tree {
         }
 
         fn handle_black_uncle_right(
-            ref self: ContractState, current: u64, parent: u64, grandparent: u64
-        ) -> u64 {
+            ref self: ContractState, current: felt252, parent: felt252, grandparent: felt252
+        ) -> felt252 {
             let mut new_current = current;
             if self.is_left_child(current) {
                 new_current = parent;
@@ -468,7 +481,7 @@ mod Tree {
 
     #[generate_trait]
     impl TreeRotations of TreeRotationsTrait {
-        fn rotate_right(ref self: ContractState, y: u64) -> u64 {
+        fn rotate_right(ref self: ContractState, y: felt252) -> felt252 {
             let x = self.tree.read(y).left;
             let B = self.tree.read(x).right;
 
@@ -501,7 +514,7 @@ mod Tree {
             x
         }
 
-        fn rotate_left(ref self: ContractState, x: u64) -> u64 {
+        fn rotate_left(ref self: ContractState, x: felt252) -> felt252 {
             let y = self.tree.read(x).right;
             let B = self.tree.read(y).left;
 
@@ -537,7 +550,7 @@ mod Tree {
 
     #[generate_trait]
     impl PrintTree of PrintTreeTrait {
-        fn print_tree_impl(ref self: ContractState, node_id: u64) {
+        fn print_tree_impl(ref self: ContractState, node_id: felt252) {
             println!("");
 
             let root_id = self.root.read();
@@ -568,11 +581,11 @@ mod Tree {
                 + 3 * (self.power(2, no_of_levels - 1) - 1);
             let mut begin_spacing = (middle_spacing - 3) / 2;
 
-            let mut queue: Array<(u64, u64)> = ArrayTrait::new();
+            let mut queue: Array<(felt252, u64)> = ArrayTrait::new();
             queue.append((root_id, 0));
             let mut current_level = 0;
-            let mut filled_position_in_levels: Array<Array<(u64, u64)>> = ArrayTrait::new();
-            let mut filled_position_in_level: Array<(u64, u64)> = ArrayTrait::new();
+            let mut filled_position_in_levels: Array<Array<(felt252, u64)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(felt252, u64)> = ArrayTrait::new();
 
             while !queue
                 .is_empty() {
@@ -663,11 +676,11 @@ mod Tree {
         }
 
         fn construct_list(
-            ref self: ContractState, filled_levels_info: @Array<Array<(u64, u64)>>
-        ) -> Array<Array<u64>> {
+            ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u64)>>
+        ) -> Array<Array<felt252>> {
             let no_of_levels = self.get_height();
             let mut i = 0;
-            let mut final_list: Array<Array<u64>> = ArrayTrait::new();
+            let mut final_list: Array<Array<felt252>> = ArrayTrait::new();
             while i < no_of_levels {
                 let filled_levels = filled_levels_info.at(i.try_into().unwrap());
                 let final_levels = self.get_level_list(i, filled_levels);
@@ -678,11 +691,11 @@ mod Tree {
         }
 
         fn get_level_list(
-            ref self: ContractState, level: u64, filled_levels: @Array<(u64, u64)>
-        ) -> Array<u64> {
+            ref self: ContractState, level: u64, filled_levels: @Array<(felt252, u64)>
+        ) -> Array<felt252> {
             let mut i = 0;
             let max_no_of_nodes = self.power(2, level);
-            let mut final_list: Array<u64> = ArrayTrait::new();
+            let mut final_list: Array<felt252> = ArrayTrait::new();
             while i < max_no_of_nodes {
                 let node_id = self.get_if_node_id_present(filled_levels, i);
                 final_list.append(node_id);
@@ -692,10 +705,10 @@ mod Tree {
         }
 
         fn get_if_node_id_present(
-            ref self: ContractState, filled_levels: @Array<(u64, u64)>, position: u64
-        ) -> u64 {
+            ref self: ContractState, filled_levels: @Array<(felt252, u64)>, position: u64
+        ) -> felt252 {
             let mut i = 0;
-            let mut found_node_id = 0_u64;
+            let mut found_node_id = 0;
             // iterate through filled_levels
             while i < filled_levels
                 .len() {
@@ -710,7 +723,7 @@ mod Tree {
         }
 
         fn collect_position_and_levels_of_nodes(
-            ref self: ContractState, node_id: u64, position: u64, level: u64
+            ref self: ContractState, node_id: felt252, position: u64, level: u64
         ) {
             if node_id == 0 {
                 return;
