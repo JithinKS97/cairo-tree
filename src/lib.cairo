@@ -695,7 +695,6 @@ mod RBTree {
             let root_id = self.root.read();
 
             if root_id == 0 {
-                println!("Tree is empty");
                 return filled_position_in_levels;
             }
 
