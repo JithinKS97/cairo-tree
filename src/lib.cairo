@@ -296,11 +296,7 @@ mod RBTree {
                 self.delete_fixup(x, x_parent);
             }
 
-            // Ensure root is black
-            let root = self.root.read();
-            if root != 0 {
-                self.set_color(root, BLACK);
-            }
+            self.ensure_root_is_black();
         }
 
         fn delete_fixup(ref self: ContractState, mut x: felt252, mut x_parent: felt252) {
