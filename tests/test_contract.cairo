@@ -29,21 +29,3 @@ fn test_increase_balance() {
     dispatcher.insert(17);
     dispatcher.print_tree();
 }
-
-// #[test]
-// #[feature("safe_dispatcher")]
-// fn test_cannot_increase_balance_with_zero_value() {
-//     let contract_address = deploy_contract("Tree");
-
-//     let safe_dispatcher = ITreeSafeDispatcher { contract_address };
-
-//     let root_before = safe_dispatcher.get_root().unwrap();
-//     assert(root_before == 0, 'Invalid balance');
-
-//     match safe_dispatcher.insert(0) {
-//         Result::Ok(_) => core::panic_with_felt252('Should have panicked'),
-//         Result::Err(panic_data) => {
-//             assert(*panic_data.at(0) == 'Value cannot be 0', *panic_data.at(0));
-//         }
-//     };
-// }

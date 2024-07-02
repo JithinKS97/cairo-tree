@@ -1,18 +1,22 @@
 #[starknet::interface]
-pub trait ITree<TContractState> {
+pub trait IRBTree<TContractState> {
     fn insert(ref self: TContractState, value: u64);
     fn delete(ref self: TContractState, value: u64);
     fn get_root(self: @TContractState) -> felt252;
-    fn traverse(ref self: TContractState);
+    fn traverse_postorder(ref self: TContractState);
     fn get_height(ref self: TContractState) -> u64;
-    fn print_tree(ref self: TContractState);
+    fn display_tree(ref self: TContractState);
 }
 
+const BLACK: u8 = 0;
+const RED: u8 = 1;
+
 #[starknet::contract]
-mod Tree {
+mod RBTree {
+    use super::{ BLACK, RED };
     use core::traits::TryInto;
     use core::traits::IndexView;
-    use tree::ITree;
+    use tree::IRBTree;
     use core::array::ArrayTrait;
     use core::option::OptionTrait;
     #[storage]
@@ -39,7 +43,7 @@ mod Tree {
     }
 
     #[abi(embed_v0)]
-    impl Tree of super::ITree<ContractState> {
+    impl RBTree of super::IRBTree<ContractState> {
         fn insert(ref self: ContractState, value: u64) {
             let new_node_id = self.create_new_node(value);
 
@@ -48,7 +52,7 @@ mod Tree {
                 return;
             }
 
-            self.insert_recursive(self.root.read(), new_node_id, value);
+            self.find_and_attach_node(self.root.read(), new_node_id, value);
             self.balance_after_insertion(new_node_id);
         }
 
@@ -64,30 +68,30 @@ mod Tree {
             self.root.read()
         }
 
-        fn traverse(ref self: ContractState) {
-            self.traverse_recursive(self.root.read());
+        fn traverse_postorder(ref self: ContractState) {
+            self.traverse_postorder_from_node(self.root.read());
         }
 
         fn get_height(ref self: ContractState) -> u64 {
             return self.find_height_impl(self.root.read());
         }
 
-        fn print_tree(ref self: ContractState) {
-            self.print_tree_impl(self.root.read());
+        fn display_tree(ref self: ContractState) {
+            self.render_tree_structure(self.root.read());
         }
     }
 
     #[generate_trait]
     impl InternalFunctions of InternalFunctionsTrait {
-        fn traverse_recursive(ref self: ContractState, current_id: felt252) {
+        fn traverse_postorder_from_node(ref self: ContractState, current_id: felt252) {
             if (current_id == 0) {
                 return;
             }
             let current_node = self.tree.read(current_id);
 
-            self.traverse_recursive(current_node.right);
+            self.traverse_postorder_from_node(current_node.right);
             println!("{}", current_node.value);
-            self.traverse_recursive(current_node.left);   
+            self.traverse_postorder_from_node(current_node.left);   
         }
 
         fn find_node(ref self: ContractState, current: felt252, value: u64) -> felt252 {
@@ -105,7 +109,7 @@ mod Tree {
             }
         }
 
-        fn insert_recursive(
+        fn find_and_attach_node(
             ref self: ContractState, current_id: felt252, new_node_id: felt252, value: u64
         ) {
             let mut current_node = self.tree.read(current_id);
@@ -123,7 +127,7 @@ mod Tree {
                     return;
                 }
 
-                self.insert_recursive(current_node.left, new_node_id, value);
+                self.find_and_attach_node(current_node.left, new_node_id, value);
             } else {
                 if current_node.right == 0 {
                     current_node.right = new_node_id;
@@ -135,7 +139,7 @@ mod Tree {
                     return;
                 }
 
-                self.insert_recursive(current_node.right, new_node_id, value);
+                self.find_and_attach_node(current_node.right, new_node_id, value);
             }
         }
 
@@ -143,9 +147,9 @@ mod Tree {
             let new_node_id = self.next_id.read();
             self.next_id.write(new_node_id + 1);
 
-            let mut color = 1;
+            let mut color = RED;
             if (self.root.read() == 0) {
-                color = 0;
+                color = BLACK;
             }
 
             let new_node = Node { value, left: 0, right: 0, parent: 0, color: color };
@@ -162,14 +166,14 @@ mod Tree {
 
         fn ensure_root_is_black(ref self: ContractState) {
             let root = self.root.read();
-            self.set_color(root, 0); // Black
+            self.set_color(root, BLACK); // Black
         }
 
         fn is_red(ref self: ContractState, node_id: felt252) -> bool {
             if node_id == 0 {
                 return false; // Null nodes are considered black
             }
-            self.tree.read(node_id).color == 1
+            self.tree.read(node_id).color == RED
         }
 
         fn set_color(ref self: ContractState, node_id: felt252, color: u8) {
@@ -243,7 +247,7 @@ mod Tree {
         }
 
         fn is_black(ref self: ContractState, node: felt252) -> bool {
-            node == 0 || self.tree.read(node).color == 0
+            node == 0 || self.tree.read(node).color == BLACK
         }
     }
 
@@ -281,10 +285,10 @@ mod Tree {
                 self.tree.write(successor_id, successor);
             }
 
-            if original_color == 0 { // Black
-                if replacement_node != 0 && self.tree.read(replacement_node).color == 1 {
+            if original_color == BLACK { // Black
+                if replacement_node != 0 && self.tree.read(replacement_node).color == RED {
                     // If we replaced a black node with a red node, just recolor it black
-                    self.set_color(replacement_node, 0);
+                    self.set_color(replacement_node, BLACK);
                 } else {
                     // Otherwise, we need to run the fix-up procedure
                     self.delete_fixup(replacement_node);
@@ -294,7 +298,7 @@ mod Tree {
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
-                self.set_color(root, 0);
+                self.set_color(root, BLACK);
             }
         }
 
@@ -311,26 +315,26 @@ mod Tree {
                             let mut sibling = self.tree.read(parent).right;
 
                             if self.is_red(sibling) {
-                                self.set_color(sibling, 0);
-                                self.set_color(parent, 1);
+                                self.set_color(sibling, BLACK);
+                                self.set_color(parent, RED);
                                 self.rotate_left(parent);
                                 sibling = self.tree.read(parent).right;
                             }
 
                             if self.is_black(self.tree.read(sibling).left)
                                 && self.is_black(self.tree.read(sibling).right) {
-                                self.set_color(sibling, 1);
+                                self.set_color(sibling, RED);
                                 node = parent;
                             } else {
                                 if self.is_black(self.tree.read(sibling).right) {
-                                    self.set_color(self.tree.read(sibling).left, 0);
-                                    self.set_color(sibling, 1);
+                                    self.set_color(self.tree.read(sibling).left, BLACK);
+                                    self.set_color(sibling, RED);
                                     self.rotate_right(sibling);
                                     sibling = self.tree.read(parent).right;
                                 }
                                 self.set_color(sibling, self.tree.read(parent).color);
-                                self.set_color(parent, 0);
-                                self.set_color(self.tree.read(sibling).right, 0);
+                                self.set_color(parent, BLACK);
+                                self.set_color(self.tree.read(sibling).right, BLACK);
                                 self.rotate_left(parent);
                                 break;
                             }
@@ -339,32 +343,32 @@ mod Tree {
                             let mut sibling = self.tree.read(parent).left;
 
                             if self.is_red(sibling) {
-                                self.set_color(sibling, 0);
-                                self.set_color(parent, 1);
+                                self.set_color(sibling, BLACK);
+                                self.set_color(parent, RED);
                                 self.rotate_right(parent);
                                 sibling = self.tree.read(parent).left;
                             }
 
                             if self.is_black(self.tree.read(sibling).right)
                                 && self.is_black(self.tree.read(sibling).left) {
-                                self.set_color(sibling, 1);
+                                self.set_color(sibling, RED);
                                 node = parent;
                             } else {
                                 if self.is_black(self.tree.read(sibling).left) {
-                                    self.set_color(self.tree.read(sibling).right, 0);
-                                    self.set_color(sibling, 1);
+                                    self.set_color(self.tree.read(sibling).right, BLACK);
+                                    self.set_color(sibling, RED);
                                     self.rotate_left(sibling);
                                     sibling = self.tree.read(parent).left;
                                 }
                                 self.set_color(sibling, self.tree.read(parent).color);
-                                self.set_color(parent, 0);
-                                self.set_color(self.tree.read(sibling).left, 0);
+                                self.set_color(parent, BLACK);
+                                self.set_color(self.tree.read(sibling).left, BLACK);
                                 self.rotate_right(parent);
                                 break;
                             }
                         }
                     };
-            self.set_color(node, 0);
+            self.set_color(node, BLACK);
         }
 
         fn transplant(ref self: ContractState, u: felt252, v: felt252) {
@@ -442,9 +446,9 @@ mod Tree {
             grandparent: felt252,
             uncle: felt252
         ) -> felt252 {
-            self.set_color(parent, 0); // Black
-            self.set_color(uncle, 0); // Black
-            self.set_color(grandparent, 1); // Red
+            self.set_color(parent, BLACK); // Black
+            self.set_color(uncle, BLACK); // Black
+            self.set_color(grandparent, RED); // Red
             grandparent
         }
 
@@ -457,8 +461,8 @@ mod Tree {
                 self.rotate_left(new_current);
             }
             let new_parent = self.tree.read(new_current).parent;
-            self.set_color(new_parent, 0); // Black
-            self.set_color(grandparent, 1); // Red
+            self.set_color(new_parent, BLACK); // Black
+            self.set_color(grandparent, RED); // Red
             self.rotate_right(grandparent);
             new_current
         }
@@ -472,8 +476,8 @@ mod Tree {
                 self.rotate_right(new_current);
             }
             let new_parent = self.tree.read(new_current).parent;
-            self.set_color(new_parent, 0); // Black
-            self.set_color(grandparent, 1); // Red
+            self.set_color(new_parent, BLACK); // Black
+            self.set_color(grandparent, RED); // Red
             self.rotate_left(grandparent);
             new_current
         }
@@ -550,7 +554,7 @@ mod Tree {
 
     #[generate_trait]
     impl PrintTree of PrintTreeTrait {
-        fn print_tree_impl(ref self: ContractState, node_id: felt252) {
+        fn render_tree_structure(ref self: ContractState, node_id: felt252) {
             println!("");
 
             let root_id = self.root.read();
@@ -653,7 +657,7 @@ mod Tree {
 
                                 print!("{}", node_value);
 
-                                if (node_color == 0) {
+                                if (node_color == BLACK) {
                                     print!("B");
                                 } else {
                                     print!("R");
