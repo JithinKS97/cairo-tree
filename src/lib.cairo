@@ -58,11 +58,11 @@ mod RBTree {
         }
 
         fn delete(ref self: ContractState, value: u64) {
-            let node_to_delete = self.find_node(self.root.read(), value);
-            if node_to_delete == 0 {
+            let node_to_delete_id = self.find_node(self.root.read(), value);
+            if node_to_delete_id == 0 {
                 return;
             }
-            self.delete_node(node_to_delete);
+            self.delete_node(node_to_delete_id);
         }
 
         fn get_root(self: @ContractState) -> felt252 {
@@ -258,122 +258,129 @@ mod RBTree {
 
     #[generate_trait]
     impl DeleteBalance of DeleteBalanceTrait {
-        fn delete_node(ref self: ContractState, node_id: felt252) {
-            let node = self.tree.read(node_id);
-            let mut original_color = node.color;
-            let mut replacement_node = 0;
-
-            if node.left == 0 {
-                replacement_node = node.right;
-                self.transplant(node_id, node.right);
-            } else if node.right == 0 {
-                replacement_node = node.left;
-                self.transplant(node_id, node.left);
+        fn delete_node(ref self: ContractState, node_to_delete: felt252) {
+            if node_to_delete == 0 {
+                return; // Node not found
+            }
+        
+            let mut y = node_to_delete;
+            let mut y_original_color = self.tree.read(y).color;
+            let mut x: felt252 = 0;
+            let mut x_parent: felt252 = 0;
+        
+            if self.tree.read(node_to_delete).left == 0 {
+                x = self.tree.read(node_to_delete).right;
+                x_parent = self.tree.read(node_to_delete).parent;
+                self.transplant(node_to_delete, x);
+            } else if self.tree.read(node_to_delete).right == 0 {
+                x = self.tree.read(node_to_delete).left;
+                x_parent = self.tree.read(node_to_delete).parent;
+                self.transplant(node_to_delete, x);
             } else {
-                let successor_id = self.minimum(node.right);
-                let mut successor = self.tree.read(successor_id);
-                original_color = successor.color;
-                replacement_node = successor.right;
-
-                if successor.parent != node_id {
-                    self.transplant(successor_id, successor.right);
-                    successor.right = node.right;
-                    self.update_parent(node.right, successor_id);
+                y = self.minimum(self.tree.read(node_to_delete).right);
+                y_original_color = self.tree.read(y).color;
+                x = self.tree.read(y).right;
+                
+                if self.tree.read(y).parent == node_to_delete {
+                    x_parent = y;
                 } else {
-                    replacement_node = successor_id;
+                    x_parent = self.tree.read(y).parent;
+                    self.transplant(y, x);
+                    let mut y_node = self.tree.read(y);
+                    y_node.right = self.tree.read(node_to_delete).right;
+                    self.tree.write(y, y_node);
+                    self.update_parent(self.tree.read(node_to_delete).right, y);
                 }
-
-                self.transplant(node_id, successor_id);
-                successor.left = node.left;
-                self.update_parent(node.left, successor_id);
-                successor.color = node.color;
-                self.tree.write(successor_id, successor);
+        
+                self.transplant(node_to_delete, y);
+                let mut y_node = self.tree.read(y);
+                y_node.left = self.tree.read(node_to_delete).left;
+                y_node.color = self.tree.read(node_to_delete).color;
+                self.tree.write(y, y_node);
+                self.update_parent(self.tree.read(node_to_delete).left, y);
             }
-
-            if original_color == BLACK { // Black
-                if replacement_node != 0 && self.tree.read(replacement_node).color == RED {
-                    // If we replaced a black node with a red node, just recolor it black
-                    self.set_color(replacement_node, BLACK);
-                } else {
-                    // Otherwise, we need to run the fix-up procedure
-                    self.delete_fixup(replacement_node);
-                }
+        
+            if y_original_color == BLACK {
+                self.delete_fixup(x, x_parent);
             }
-
+        
             // Ensure root is black
             let root = self.root.read();
             if root != 0 {
                 self.set_color(root, BLACK);
             }
         }
-
-        fn delete_fixup(ref self: ContractState, mut node: felt252) {
-            while node != self.root.read()
-                && self
-                    .is_black(node) {
-                        let parent = self.get_parent(node);
-                        if parent == 0 {
-                            break;
+        
+        fn delete_fixup(ref self: ContractState, mut x: felt252, mut x_parent: felt252) {
+            while x != self.root.read() && (x == 0 || self.is_black(x)) {
+                if x == self.tree.read(x_parent).left {
+                    let mut w = self.tree.read(x_parent).right;
+                    if self.is_red(w) {
+                        self.set_color(w, BLACK);
+                        self.set_color(x_parent, RED);
+                        self.rotate_left(x_parent);
+                        w = self.tree.read(x_parent).right;
+                    }
+                    if (self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left)) &&
+                       (self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right)) {
+                        self.set_color(w, RED);
+                        x = x_parent;
+                        x_parent = self.get_parent(x);
+                    } else {
+                        if self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right) {
+                            if self.tree.read(w).left != 0 {
+                                self.set_color(self.tree.read(w).left, BLACK);
+                            }
+                            self.set_color(w, RED);
+                            self.rotate_right(w);
+                            w = self.tree.read(x_parent).right;
                         }
-
-                        if self.is_left_child(node) {
-                            let mut sibling = self.tree.read(parent).right;
-
-                            if self.is_red(sibling) {
-                                self.set_color(sibling, BLACK);
-                                self.set_color(parent, RED);
-                                self.rotate_left(parent);
-                                sibling = self.tree.read(parent).right;
-                            }
-
-                            if self.is_black(self.tree.read(sibling).left)
-                                && self.is_black(self.tree.read(sibling).right) {
-                                self.set_color(sibling, RED);
-                                node = parent;
-                            } else {
-                                if self.is_black(self.tree.read(sibling).right) {
-                                    self.set_color(self.tree.read(sibling).left, BLACK);
-                                    self.set_color(sibling, RED);
-                                    self.rotate_right(sibling);
-                                    sibling = self.tree.read(parent).right;
-                                }
-                                self.set_color(sibling, self.tree.read(parent).color);
-                                self.set_color(parent, BLACK);
-                                self.set_color(self.tree.read(sibling).right, BLACK);
-                                self.rotate_left(parent);
-                                break;
-                            }
-                        } else {
-                            // Mirror case for right child
-                            let mut sibling = self.tree.read(parent).left;
-
-                            if self.is_red(sibling) {
-                                self.set_color(sibling, BLACK);
-                                self.set_color(parent, RED);
-                                self.rotate_right(parent);
-                                sibling = self.tree.read(parent).left;
-                            }
-
-                            if self.is_black(self.tree.read(sibling).right)
-                                && self.is_black(self.tree.read(sibling).left) {
-                                self.set_color(sibling, RED);
-                                node = parent;
-                            } else {
-                                if self.is_black(self.tree.read(sibling).left) {
-                                    self.set_color(self.tree.read(sibling).right, BLACK);
-                                    self.set_color(sibling, RED);
-                                    self.rotate_left(sibling);
-                                    sibling = self.tree.read(parent).left;
-                                }
-                                self.set_color(sibling, self.tree.read(parent).color);
-                                self.set_color(parent, BLACK);
-                                self.set_color(self.tree.read(sibling).left, BLACK);
-                                self.rotate_right(parent);
-                                break;
-                            }
+                        self.set_color(w, self.tree.read(x_parent).color);
+                        self.set_color(x_parent, BLACK);
+                        if self.tree.read(w).right != 0 {
+                            self.set_color(self.tree.read(w).right, BLACK);
                         }
-                    };
-            self.set_color(node, BLACK);
+                        self.rotate_left(x_parent);
+                        x = self.root.read();
+                        break;
+                    }
+                } else {
+                    // Mirror case for right child
+                    let mut w = self.tree.read(x_parent).left;
+                    if self.is_red(w) {
+                        self.set_color(w, BLACK);
+                        self.set_color(x_parent, RED);
+                        self.rotate_right(x_parent);
+                        w = self.tree.read(x_parent).left;
+                    }
+                    if (self.tree.read(w).right == 0 || self.is_black(self.tree.read(w).right)) &&
+                       (self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left)) {
+                        self.set_color(w, RED);
+                        x = x_parent;
+                        x_parent = self.get_parent(x);
+                    } else {
+                        if self.tree.read(w).left == 0 || self.is_black(self.tree.read(w).left) {
+                            if self.tree.read(w).right != 0 {
+                                self.set_color(self.tree.read(w).right, BLACK);
+                            }
+                            self.set_color(w, RED);
+                            self.rotate_left(w);
+                            w = self.tree.read(x_parent).left;
+                        }
+                        self.set_color(w, self.tree.read(x_parent).color);
+                        self.set_color(x_parent, BLACK);
+                        if self.tree.read(w).left != 0 {
+                            self.set_color(self.tree.read(w).left, BLACK);
+                        }
+                        self.rotate_right(x_parent);
+                        x = self.root.read();
+                        break;
+                    }
+                }
+            };
+            if x != 0 {
+                self.set_color(x, BLACK);
+            }
         }
 
         fn transplant(ref self: ContractState, u: felt252, v: felt252) {
