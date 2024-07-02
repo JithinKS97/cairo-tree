@@ -615,7 +615,7 @@ mod RBTree {
             }
         
             let filled_position_in_levels = self.get_filled_position_in_levels();
-            let all_nodes = self.construct_list(@filled_position_in_levels);
+            let all_nodes = self.construct_complete_tree_representation(@filled_position_in_levels);
         
             let (mut middle_spacing, mut begin_spacing) = self.calculate_initial_spacing(no_of_levels);
         
@@ -755,22 +755,22 @@ mod RBTree {
             return filled_position_in_levels;
         }
 
-        fn construct_list(
+        fn construct_complete_tree_representation (
             ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u256)>>
         ) -> Array<Array<felt252>> {
             let no_of_levels = self.get_height();
             let mut i = 0;
-            let mut final_list: Array<Array<felt252>> = ArrayTrait::new();
+            let mut complete_tree_representation: Array<Array<felt252>> = ArrayTrait::new();
             while i < no_of_levels {
-                let filled_levels = filled_levels_info.at(i.try_into().unwrap());
-                let final_levels = self.get_level_list(i, filled_levels);
-                final_list.append(final_levels);
+                let filled_level_info = filled_levels_info.at(i.try_into().unwrap());
+                let complete_level_info = self.get_complete_level_info(i, filled_level_info);
+                complete_tree_representation.append(complete_level_info);
                 i = i + 1;
             };
-            return final_list;
+            return complete_tree_representation;
         }
 
-        fn get_level_list(
+        fn get_complete_level_info(
             ref self: ContractState, level: u256, filled_levels: @Array<(felt252, u256)>
         ) -> Array<felt252> {
             let mut i = 0;
