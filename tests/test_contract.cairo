@@ -6,6 +6,7 @@ use tree::IRBTreeSafeDispatcher;
 use tree::IRBTreeSafeDispatcherTrait;
 use tree::IRBTreeDispatcher;
 use tree::IRBTreeDispatcherTrait;
+use core::pedersen::pedersen;
 
 fn deploy_contract(name: ByteArray) -> ContractAddress {
     let contract = declare(name).unwrap();
@@ -306,26 +307,54 @@ fn test_multiple_deletions_round_2() {
     assert(result.len() == 0, 'Empty tree check failed');
 }
 
+const max_no:u8 = 200;
+
+fn random(seed: felt252) -> u8 {
+    // Use pedersen hash to generate a pseudo-random felt252
+    let hash = pedersen(seed, 0);
+    
+    // Convert the felt252 to u256 and take the last 8 bits
+    let random_u256: u256 = hash.into();
+    let random_u8: u8 = (random_u256 & 0xFF).try_into().unwrap();
+    
+    // Scale to 1-100 range
+    (random_u8 % max_no) + 1
+}
+
 // Stress Test
 #[test]
 fn testing_large_no_insertions_deletions() {
     let contract_address = deploy_contract("RBTree");
-    let no_of_nodes = 100;
+    let no_of_nodes = max_no;
     let dispatcher = IRBTreeDispatcher { contract_address };
-
     let mut i = 1;
+    let mut inserted_numbers:Array<u256> = ArrayTrait::new();
+    let mut is_number_inserted: Felt252Dict<bool> = Default::default();
+
     while i <= no_of_nodes {
-        dispatcher.insert(i);
-        let result = dispatcher.is_tree_valid();
-        assert(result == true, 'Tree is invalid');
+        let rand_num = random(i.try_into().unwrap());
+        if is_number_inserted.get(rand_num.try_into().unwrap()) {
+            i = i+1;
+            continue;
+        } else {
+            is_number_inserted.insert(rand_num.try_into().unwrap(), true);
+        }
+        dispatcher.insert(rand_num.try_into().unwrap());
+        inserted_numbers.append(rand_num.try_into().unwrap());
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
         i = i+1;
     };
 
-    let mut i = no_of_nodes;
-    while i > 0 {
-        dispatcher.delete(i);
-        let result = dispatcher.is_tree_valid();
-        assert(result == true, 'Tree is invalid');
-        i -= 1;
-    };
+    println!("No of nums inserted: {:?}", inserted_numbers.len());
+
+    let mut j = 0;
+
+    while j < inserted_numbers.len() {
+        let num = *inserted_numbers.at(j);
+        dispatcher.delete(num.try_into().unwrap());
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        j = j+1;
+    }
 }
