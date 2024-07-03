@@ -327,10 +327,11 @@ fn testing_large_no_insertions_deletions() {
     let contract_address = deploy_contract("RBTree");
     let no_of_nodes = max_no;
     let dispatcher = IRBTreeDispatcher { contract_address };
-    let mut i = 1;
+
     let mut inserted_numbers:Array<u256> = ArrayTrait::new();
     let mut is_number_inserted: Felt252Dict<bool> = Default::default();
 
+    let mut i = 1;
     while i <= no_of_nodes {
         let rand_num = random(i.try_into().unwrap());
         if is_number_inserted.get(rand_num.try_into().unwrap()) {
