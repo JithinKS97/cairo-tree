@@ -74,7 +74,7 @@ mod RBTree {
         }
 
         fn get_height(ref self: ContractState) -> u256 {
-            return self.find_height_impl(self.root.read());
+            return self.get_sub_tree_height(self.root.read());
         }
 
         fn display_tree(ref self: ContractState) {
@@ -82,7 +82,7 @@ mod RBTree {
         }
 
         fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
-            self.get_tree_structure_impl()
+            self.build_tree_structure_list()
         }
     }
 
@@ -187,14 +187,14 @@ mod RBTree {
             self.tree.write(node_id, node);
         }
 
-        fn find_height_impl(ref self: ContractState, node_id: felt252) -> u256 {
+        fn get_sub_tree_height(ref self: ContractState, node_id: felt252) -> u256 {
             let node = self.tree.read(node_id);
 
             if (node_id == 0) {
                 return 0;
             } else {
-                let left_height = self.find_height_impl(node.left);
-                let right_height = self.find_height_impl(node.right);
+                let left_height = self.get_sub_tree_height(node.left);
+                let right_height = self.get_sub_tree_height(node.right);
 
                 if (left_height > right_height) {
                     return left_height + 1;
@@ -606,7 +606,7 @@ mod RBTree {
                 return;
             }
         
-            let tree_height = self.find_height_impl(root_id);
+            let tree_height = self.get_height();
             let no_of_levels = tree_height - 1;
         
             if no_of_levels == 0 {
@@ -729,7 +729,7 @@ mod RBTree {
             }
         }
 
-        fn get_tree_structure_impl(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
+        fn build_tree_structure_list(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
             if(self.root.read() == 0) {
                 return ArrayTrait::new();
             }
