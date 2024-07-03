@@ -6,12 +6,12 @@ pub trait IRBTree<TContractState> {
     fn traverse_postorder(ref self: TContractState);
     fn get_height(ref self: TContractState) -> u256;
     fn display_tree(ref self: TContractState);
-    fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, u8, u256)>>;
+    fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, bool, u256)>>;
     fn is_tree_valid(ref self: TContractState) -> bool;
 }
 
-const BLACK: u8 = 0;
-const RED: u8 = 1;
+const BLACK: bool = false;
+const RED: bool = true;
 
 #[starknet::contract]
 mod RBTree {
@@ -35,7 +35,7 @@ mod RBTree {
         left: felt252,
         right: felt252,
         parent: felt252,
-        color: u8,
+        color: bool,
     }
 
     #[constructor]
@@ -82,7 +82,7 @@ mod RBTree {
             self.display_tree_structure(self.root.read());
         }
 
-        fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
+        fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, bool, u256)>> {
             self.build_tree_structure_list()
         }
 
@@ -243,7 +243,7 @@ mod RBTree {
             self.set_color(root, BLACK); // Black
         }
 
-        fn set_color(ref self: ContractState, node_id: felt252, color: u8) {
+        fn set_color(ref self: ContractState, node_id: felt252, color: bool) {
             if node_id == 0 {
                 return; // Can't set color of null node
             }
@@ -738,13 +738,13 @@ mod RBTree {
             }
         }
 
-        fn build_tree_structure_list(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
+        fn build_tree_structure_list(ref self: ContractState) -> Array<Array<(u256, bool, u256)>> {
             if (self.root.read() == 0) {
                 return ArrayTrait::new();
             }
             let filled_position_in_levels_original = self.get_node_positions_by_level();
-            let mut filled_position_in_levels: Array<Array<(u256, u8, u256)>> = ArrayTrait::new();
-            let mut filled_position_in_level: Array<(u256, u8, u256)> = ArrayTrait::new();
+            let mut filled_position_in_levels: Array<Array<(u256, bool, u256)>> = ArrayTrait::new();
+            let mut filled_position_in_level: Array<(u256, bool, u256)> = ArrayTrait::new();
             let mut i = 0;
             while i < filled_position_in_levels_original
                 .len() {
