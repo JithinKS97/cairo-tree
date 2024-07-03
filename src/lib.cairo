@@ -7,6 +7,7 @@ pub trait IRBTree<TContractState> {
     fn get_height(ref self: TContractState) -> u256;
     fn display_tree(ref self: TContractState);
     fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, u8, u256)>>;
+    fn is_tree_valid(ref self: TContractState) -> bool;
 }
 
 const BLACK: u8 = 0;
@@ -83,6 +84,10 @@ mod RBTree {
 
         fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
             self.build_tree_structure_list()
+        }
+
+        fn is_tree_valid(ref self: ContractState) -> bool {
+            self.check_if_rb_tree_is_valid()
         }
     }
 
@@ -489,7 +494,7 @@ mod RBTree {
     }
 
     #[generate_trait]
-    impl TreeRotations of TreeRotationsTrait {
+    impl RBTreeRotations of RBTreeRotationsTrait {
         fn rotate_right(ref self: ContractState, y: felt252) -> felt252 {
             let x = self.tree.read(y).left;
             let B = self.tree.read(x).right;
@@ -558,7 +563,7 @@ mod RBTree {
     }
 
     #[generate_trait]
-    impl PrintTree of PrintTreeTrait {
+    impl PrintRBTree of PrintRBTreeTrait {
         fn get_filled_position_in_levels(ref self: ContractState) -> Array<Array<(felt252, u256)>> {
             let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
             let root_id = self.root.read();
@@ -599,31 +604,32 @@ mod RBTree {
 
         fn render_tree_structure(ref self: ContractState, node_id: felt252) {
             println!("");
-        
+
             let root_id = self.root.read();
             if root_id == 0 {
                 println!("Tree is empty");
                 return;
             }
-        
+
             let tree_height = self.get_height();
             let no_of_levels = tree_height - 1;
-        
+
             if no_of_levels == 0 {
                 self.render_single_node(root_id);
                 return;
             }
-        
+
             let filled_position_in_levels = self.get_filled_position_in_levels();
             let all_nodes = self.construct_complete_tree_representation(@filled_position_in_levels);
-        
-            let (mut middle_spacing, mut begin_spacing) = self.calculate_initial_spacing(no_of_levels);
-        
+
+            let (mut middle_spacing, mut begin_spacing) = self
+                .calculate_initial_spacing(no_of_levels);
+
             self.render_tree_levels(all_nodes, no_of_levels, ref middle_spacing, ref begin_spacing);
-        
+
             println!("");
         }
-        
+
         fn render_single_node(ref self: ContractState, node_id: felt252) {
             let root_node = self.tree.read(node_id);
             if root_node.value < 10 {
@@ -631,7 +637,7 @@ mod RBTree {
             }
             println!("{}B", root_node.value);
         }
-        
+
         fn calculate_initial_spacing(ref self: ContractState, no_of_levels: u256) -> (u256, u256) {
             let middle_spacing = 3 * self.power(2, no_of_levels)
                 + 5 * self.power(2, no_of_levels - 1)
@@ -639,12 +645,12 @@ mod RBTree {
             let begin_spacing = (middle_spacing - 3) / 2;
             (middle_spacing, begin_spacing)
         }
-        
+
         fn render_tree_levels(
-            ref self: ContractState, 
-            all_nodes: Array<Array<felt252>>, 
-            no_of_levels: u256, 
-            ref middle_spacing: u256, 
+            ref self: ContractState,
+            all_nodes: Array<Array<felt252>>,
+            no_of_levels: u256,
+            ref middle_spacing: u256,
             ref begin_spacing: u256
         ) {
             let mut i = 0;
@@ -654,23 +660,23 @@ mod RBTree {
                 }
                 let level = all_nodes.at(i.try_into().unwrap());
                 self.render_level(level, i, no_of_levels, begin_spacing, middle_spacing);
-        
+
                 if i < no_of_levels.try_into().unwrap() {
                     middle_spacing = begin_spacing;
                     begin_spacing = (begin_spacing - 3) / 2;
                 }
-        
+
                 println!("");
                 i += 1;
             }
         }
-        
+
         fn render_level(
-            ref self: ContractState, 
-            level: @Array<felt252>, 
-            level_index: u256, 
-            no_of_levels: u256, 
-            begin_spacing: u256, 
+            ref self: ContractState,
+            level: @Array<felt252>,
+            level_index: u256,
+            no_of_levels: u256,
+            begin_spacing: u256,
             middle_spacing: u256
         ) {
             let mut j = 0_u256;
@@ -679,20 +685,23 @@ mod RBTree {
                     break;
                 }
                 let node_id = *level.at(j.try_into().unwrap());
-        
-                self.print_node_spacing(j, level_index, no_of_levels, begin_spacing, middle_spacing);
+
+                self
+                    .print_node_spacing(
+                        j, level_index, no_of_levels, begin_spacing, middle_spacing
+                    );
                 self.print_node(node_id);
-        
+
                 j += 1;
             }
         }
-        
+
         fn print_node_spacing(
-            ref self: ContractState, 
-            node_index: u256, 
-            level_index: u256, 
-            no_of_levels: u256, 
-            begin_spacing: u256, 
+            ref self: ContractState,
+            node_index: u256,
+            level_index: u256,
+            no_of_levels: u256,
+            begin_spacing: u256,
             middle_spacing: u256
         ) {
             if node_index == 0 {
@@ -707,7 +716,7 @@ mod RBTree {
                 self.print_n_spaces(middle_spacing);
             }
         }
-        
+
         fn print_node(ref self: ContractState, node_id: felt252) {
             if node_id == 0 {
                 print!("...");
@@ -715,12 +724,12 @@ mod RBTree {
                 let node = self.tree.read(node_id);
                 let node_value = node.value;
                 let node_color = node.color;
-        
+
                 if node_value < 10 {
                     print!("0");
                 }
                 print!("{}", node_value);
-        
+
                 if node_color == BLACK {
                     print!("B");
                 } else {
@@ -730,7 +739,7 @@ mod RBTree {
         }
 
         fn build_tree_structure_list(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
-            if(self.root.read() == 0) {
+            if (self.root.read() == 0) {
                 return ArrayTrait::new();
             }
             let filled_position_in_levels_original = self.get_filled_position_in_levels();
@@ -755,7 +764,7 @@ mod RBTree {
             return filled_position_in_levels;
         }
 
-        fn construct_complete_tree_representation (
+        fn construct_complete_tree_representation(
             ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u256)>>
         ) -> Array<Array<felt252>> {
             let no_of_levels = self.get_height();
@@ -823,6 +832,58 @@ mod RBTree {
                 print!(" ");
                 i += 1;
             }
+        }
+    }
+
+    #[generate_trait]
+    impl RBTreeValidation of RBTreeValidationTrait {
+        fn check_if_rb_tree_is_valid(ref self: ContractState) -> bool {
+            let root = self.root.read();
+            if root == 0 {
+                return true; // An empty tree is a valid RB tree
+            }
+
+            // Check if root is black
+            if !self.is_black(root) {
+                return false;
+            }
+
+            // Check other properties
+            let (is_valid, _) = self.validate_node(root);
+            is_valid
+        }
+
+        fn validate_node(ref self: ContractState, node: felt252) -> (bool, u32) {
+            if node == 0 {
+                return (true, 1); // Null nodes are considered black
+            }
+
+            let node_data = self.tree.read(node);
+            
+            let (left_valid, left_black_height) = self.validate_node(node_data.left);
+            let (right_valid, right_black_height) = self.validate_node(node_data.right);
+
+            if !left_valid || !right_valid {
+                return (false, 0);
+            }
+
+            // Check Red-Black properties
+            if self.is_red(node) {
+                if self.is_red(node_data.left) || self.is_red(node_data.right) {
+                    return (false, 0); // Red node cannot have red children
+                }
+            }
+
+            if left_black_height != right_black_height {
+                return (false, 0); // Black height must be the same for both subtrees
+            }
+
+            let current_black_height = left_black_height + if self.is_black(node) {
+                1
+            } else {
+                0
+            };
+            (true, current_black_height)
         }
     }
 }

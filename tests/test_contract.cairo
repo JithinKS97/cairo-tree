@@ -306,3 +306,26 @@ fn test_multiple_deletions_round_2() {
     assert(result.len() == 0, 'Empty tree check failed');
 }
 
+// Stress Test
+#[test]
+fn testing_large_no_insertions_deletions() {
+    let contract_address = deploy_contract("RBTree");
+    let no_of_nodes = 50;
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let mut i = 1;
+    while i <= no_of_nodes {
+        dispatcher.insert(i);
+        let result = dispatcher.is_tree_valid();
+        assert(result == true, 'Tree is invalid');
+        i = i+1;
+    };
+
+    let mut i = no_of_nodes;
+    while i > 0 {
+        dispatcher.delete(i);
+        let result = dispatcher.is_tree_valid();
+        assert(result == true, 'Tree is invalid');
+        i -= 1;
+    };
+}
