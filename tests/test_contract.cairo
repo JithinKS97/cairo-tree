@@ -346,8 +346,6 @@ fn testing_large_no_insertions_deletions() {
         i = i+1;
     };
 
-    println!("Inserted {:?} nums", inserted_numbers.len());
-
     let mut j = 0;
 
     while j < inserted_numbers.len() {
@@ -360,5 +358,4 @@ fn testing_large_no_insertions_deletions() {
 
     let tree = dispatcher.get_tree_structure();
     assert(tree.len() == 0, 'Tree is not empty');
-    println!("Deleted all nums")
 }
