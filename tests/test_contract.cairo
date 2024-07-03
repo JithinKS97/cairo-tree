@@ -158,6 +158,51 @@ fn test_recoloring_two() {
     dispatcher.create_node(33, RED, node_36);
     dispatcher.create_node(38, RED, node_36);
 
+    dispatcher.insert(40);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_40, color_40, pos_40) = *result.at(4).at(0);
+    let (value_33, color_33, pos_33) = *result.at(3).at(0);
+    let (value_38, color_38, pos_38) = *result.at(3).at(1);
+    let (value_36, color_36, pos_36) = *result.at(2).at(2);
+    let (value_41, color_41, pos_41) = *result.at(1).at(1);
+    let (value_46, color_46, pos_46) = *result.at(2).at(3);
+    let (value_11, color_11, pos_11) = *result.at(1).at(0);
+    let (value_31, color_31, pos_31) = *result.at(0).at(0);
+
+    assert(value_40 == 40, 'Error in value_40');
+    assert(color_40 == RED, 'Error in color_40');
+    assert(pos_40 == 11, 'Error in pos_40');
+
+    assert(value_33 == 33, 'Error in value_33');
+    assert(color_33 == BLACK, 'Error in color_33');
+    assert(pos_33 == 4, 'Error in pos_33');
+
+    assert(value_38 == 38, 'Error in value_38');
+    assert(color_38 == BLACK, 'Error in color_38');
+    assert(pos_38 == 5, 'Error in pos_38');
+
+    assert(value_36 == 36, 'Error in value_36');
+    assert(color_36 == RED, 'Error in color_36');
+    assert(pos_36 == 2, 'Error in pos_36');
+
+    assert(value_41 == 41, 'Error in value_41');
+    assert(color_41 == BLACK, 'Error in color_41');
+    assert(pos_41 == 1, 'Error in pos_41');
+
+    assert(value_46 == 46, 'Error in value_46');
+    assert(color_46 == BLACK, 'Error in color_46');
+    assert(pos_46 == 3, 'Error in pos_46');
+
+    assert(value_11 == 11, 'Error in value_11');
+    assert(color_11 == BLACK, 'Error in color_11');
+    assert(pos_11 == 0, 'Error in pos_11');
+
+    assert(value_31 == 31, 'Error in value_31');
+    assert(color_31 == BLACK, 'Error in color_31');
+    assert(pos_31 == 0, 'Error in pos_31');
+
     let is_tree_valid = dispatcher.is_tree_valid();
-    println!("Is tree valid: {}", is_tree_valid);
+    assert(is_tree_valid == true, 'Tree invalid');
 }
