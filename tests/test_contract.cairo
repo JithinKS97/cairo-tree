@@ -310,7 +310,7 @@ fn test_multiple_deletions_round_2() {
 #[test]
 fn testing_large_no_insertions_deletions() {
     let contract_address = deploy_contract("RBTree");
-    let no_of_nodes = 50;
+    let no_of_nodes = 100;
     let dispatcher = IRBTreeDispatcher { contract_address };
 
     let mut i = 1;
