@@ -647,7 +647,7 @@ mod RBTree {
             ref middle_spacing: u256, 
             ref begin_spacing: u256
         ) {
-            let mut i = 0_u256;
+            let mut i = 0;
             loop {
                 if i >= all_nodes.len().try_into().unwrap() {
                     break;
