@@ -1,6 +1,7 @@
 #[starknet::interface]
 pub trait IRBTree<TContractState> {
     fn insert(ref self: TContractState, value: u256);
+    fn find(ref self: TContractState, value: u256) -> felt252;
     fn delete(ref self: TContractState, value: u256);
     fn get_root(self: @TContractState) -> felt252;
     fn traverse_postorder(ref self: TContractState);
@@ -8,6 +9,7 @@ pub trait IRBTree<TContractState> {
     fn display_tree(ref self: TContractState);
     fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, bool, u256)>>;
     fn is_tree_valid(ref self: TContractState) -> bool;
+    fn create_node(ref self: TContractState, value: u256, color: bool, parent: felt252) -> felt252;
 }
 
 const BLACK: bool = false;
@@ -29,7 +31,7 @@ mod RBTree {
         next_id: felt252,
     }
 
-    #[derive(Copy, Drop, Serde, starknet::Store)]
+    #[derive(Copy, Drop, Debug, Serde, starknet::Store)]
     struct Node {
         value: u256,
         left: felt252,
@@ -56,6 +58,10 @@ mod RBTree {
 
             self.insert_node_recursively(self.root.read(), new_node_id, value);
             self.balance_after_insertion(new_node_id);
+        }
+
+        fn find(ref self: ContractState, value: u256) -> felt252 {
+            self.find_node(self.root.read(), value)
         }
 
         fn delete(ref self: ContractState, value: u256) {
@@ -88,6 +94,19 @@ mod RBTree {
 
         fn is_tree_valid(ref self: ContractState) -> bool {
             self.check_if_rb_tree_is_valid()
+        }
+
+        fn create_node(ref self: ContractState, value: u256, color:bool, parent: felt252) -> felt252 {
+            let new_node = self.create_new_node(value);
+            self.set_color(new_node, color);
+            self.update_parent(new_node, parent);
+            let parent_node = self.tree.read(parent);
+            if value < parent_node.value {
+                self.update_left(parent, new_node);
+            } else {
+                self.update_right(parent, new_node);
+            }
+            return new_node;
         }
     }
 
