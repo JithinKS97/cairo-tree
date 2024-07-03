@@ -348,7 +348,6 @@ fn testing_large_no_insertions_deletions() {
     };
 
     let mut j = 0;
-
     while j < inserted_numbers.len() {
         let num = *inserted_numbers.at(j);
         dispatcher.delete(num.try_into().unwrap());
