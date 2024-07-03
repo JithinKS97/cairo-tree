@@ -138,3 +138,26 @@ fn test_recoloring_only() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
+
+#[test]
+fn test_recoloring_two() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(31);
+
+    let node_11 = dispatcher.create_node(11, RED, 1); 
+    let node_41 = dispatcher.create_node(41, RED, 1);
+
+    dispatcher.create_node(1, BLACK, node_11);
+    dispatcher.create_node(27, BLACK, node_11);
+
+    let node_36 = dispatcher.create_node(36, BLACK, node_41);
+    dispatcher.create_node(46, BLACK, node_41);
+
+    dispatcher.create_node(33, RED, node_36);
+    dispatcher.create_node(38, RED, node_36);
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    println!("Is tree valid: {}", is_tree_valid);
+}
