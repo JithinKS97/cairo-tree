@@ -128,6 +128,13 @@ fn test_recoloring_only() {
     assert(color_41 == BLACK, 'Error in color_41');
     assert(pos_41 == 1, 'Error in pos_41');
 
+    // 31 should be the root
+    let (value_31, color_31, pos_31) = *result.at(0).at(0);
+
+    assert(value_31 == 31, 'Error in value 31');
+    assert(color_31 == BLACK, 'Error in color 31');
+    assert(pos_31 == 0, 'Error in pos 31');
+
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
