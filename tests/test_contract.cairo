@@ -317,7 +317,7 @@ fn random(seed: felt252) -> u8 {
     let random_u256: u256 = hash.into();
     let random_u8: u8 = (random_u256 & 0xFF).try_into().unwrap();
     
-    // Scale to 1-100 range
+    // Scale
     (random_u8 % max_no) + 1
 }
 
