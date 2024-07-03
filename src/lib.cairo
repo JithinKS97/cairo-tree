@@ -54,7 +54,7 @@ mod RBTree {
                 return;
             }
 
-            self.find_and_attach_node(self.root.read(), new_node_id, value);
+            self.insert_node_recursively(self.root.read(), new_node_id, value);
             self.balance_after_insertion(new_node_id);
         }
 
@@ -79,7 +79,7 @@ mod RBTree {
         }
 
         fn display_tree(ref self: ContractState) {
-            self.render_tree_structure(self.root.read());
+            self.display_tree_structure(self.root.read());
         }
 
         fn get_tree_structure(ref self: ContractState) -> Array<Array<(u256, u8, u256)>> {
@@ -119,7 +119,7 @@ mod RBTree {
             }
         }
 
-        fn find_and_attach_node(
+        fn insert_node_recursively(
             ref self: ContractState, current_id: felt252, new_node_id: felt252, value: u256
         ) {
             let mut current_node = self.tree.read(current_id);
@@ -137,7 +137,7 @@ mod RBTree {
                     return;
                 }
 
-                self.find_and_attach_node(current_node.left, new_node_id, value);
+                self.insert_node_recursively(current_node.left, new_node_id, value);
             } else {
                 if current_node.right == 0 {
                     current_node.right = new_node_id;
@@ -149,7 +149,7 @@ mod RBTree {
                     return;
                 }
 
-                self.find_and_attach_node(current_node.right, new_node_id, value);
+                self.insert_node_recursively(current_node.right, new_node_id, value);
             }
         }
 
@@ -564,7 +564,7 @@ mod RBTree {
 
     #[generate_trait]
     impl PrintRBTree of PrintRBTreeTrait {
-        fn get_filled_position_in_levels(ref self: ContractState) -> Array<Array<(felt252, u256)>> {
+        fn get_node_positions_by_level(ref self: ContractState) -> Array<Array<(felt252, u256)>> {
             let mut queue: Array<(felt252, u256)> = ArrayTrait::new();
             let root_id = self.root.read();
             let initial_level = 0;
@@ -602,7 +602,7 @@ mod RBTree {
             return filled_position_in_levels;
         }
 
-        fn render_tree_structure(ref self: ContractState, node_id: felt252) {
+        fn display_tree_structure(ref self: ContractState, node_id: felt252) {
             println!("");
 
             let root_id = self.root.read();
@@ -619,8 +619,8 @@ mod RBTree {
                 return;
             }
 
-            let filled_position_in_levels = self.get_filled_position_in_levels();
-            let all_nodes = self.construct_complete_tree_representation(@filled_position_in_levels);
+            let node_positions_by_level = self.get_node_positions_by_level();
+            let all_nodes = self.build_complete_tree_representation(@node_positions_by_level);
 
             let (mut middle_spacing, mut begin_spacing) = self
                 .calculate_initial_spacing(no_of_levels);
@@ -742,7 +742,7 @@ mod RBTree {
             if (self.root.read() == 0) {
                 return ArrayTrait::new();
             }
-            let filled_position_in_levels_original = self.get_filled_position_in_levels();
+            let filled_position_in_levels_original = self.get_node_positions_by_level();
             let mut filled_position_in_levels: Array<Array<(u256, u8, u256)>> = ArrayTrait::new();
             let mut filled_position_in_level: Array<(u256, u8, u256)> = ArrayTrait::new();
             let mut i = 0;
@@ -764,33 +764,33 @@ mod RBTree {
             return filled_position_in_levels;
         }
 
-        fn construct_complete_tree_representation(
-            ref self: ContractState, filled_levels_info: @Array<Array<(felt252, u256)>>
+        fn build_complete_tree_representation(
+            ref self: ContractState, node_positions_by_level: @Array<Array<(felt252, u256)>>
         ) -> Array<Array<felt252>> {
             let no_of_levels = self.get_height();
             let mut i = 0;
             let mut complete_tree_representation: Array<Array<felt252>> = ArrayTrait::new();
             while i < no_of_levels {
-                let filled_level_info = filled_levels_info.at(i.try_into().unwrap());
-                let complete_level_info = self.get_complete_level_info(i, filled_level_info);
-                complete_tree_representation.append(complete_level_info);
+                let node_positions_at_level = node_positions_by_level.at(i.try_into().unwrap());
+                let all_nodes_in_level = self.fill_all_nodes_in_level(i, node_positions_at_level);
+                complete_tree_representation.append(all_nodes_in_level);
                 i = i + 1;
             };
             return complete_tree_representation;
         }
 
-        fn get_complete_level_info(
+        fn fill_all_nodes_in_level(
             ref self: ContractState, level: u256, filled_levels: @Array<(felt252, u256)>
         ) -> Array<felt252> {
             let mut i = 0;
             let max_no_of_nodes = self.power(2, level);
-            let mut final_list: Array<felt252> = ArrayTrait::new();
+            let mut all_nodes_in_level: Array<felt252> = ArrayTrait::new();
             while i < max_no_of_nodes {
                 let node_id = self.get_if_node_id_present(filled_levels, i);
-                final_list.append(node_id);
+                all_nodes_in_level.append(node_id);
                 i += 1;
             };
-            return final_list;
+            return all_nodes_in_level;
         }
 
         fn get_if_node_id_present(
@@ -859,7 +859,7 @@ mod RBTree {
             }
 
             let node_data = self.tree.read(node);
-            
+
             let (left_valid, left_black_height) = self.validate_node(node_data.left);
             let (right_valid, right_black_height) = self.validate_node(node_data.right);
 
