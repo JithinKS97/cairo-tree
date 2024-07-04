@@ -577,3 +577,27 @@ fn test_right_left_rotation_after_recolor() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
+
+#[test]
+fn test_right_rotation_after_recolor() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(33);
+    let node_13 = dispatcher.create_node(13, RED, 1);
+    let node_43 = dispatcher.create_node(43, BLACK, 1);
+
+    let node_3 = dispatcher.create_node(3, BLACK, node_13);
+    dispatcher.create_node(29, BLACK, node_13);
+    dispatcher.create_node(38, RED, node_43);
+    dispatcher.create_node(48, RED, node_43);
+
+    dispatcher.create_node(2, RED, node_3);
+    dispatcher.create_node(4, RED, node_3);
+
+    dispatcher.display_tree();
+
+    dispatcher.insert(1);
+
+    dispatcher.display_tree();
+}
