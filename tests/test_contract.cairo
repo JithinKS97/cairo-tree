@@ -914,3 +914,21 @@ fn test_deletion_black_node_black_successor_no_child_case_4() {
     let (l_child_31, _) = dispatcher.get_children(node_31);
     assert(l_child_31 == node_1, 'Error in l child 31');
 }
+
+#[test]
+fn test_deletion_black_node_no_successor_case_6() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let node_21 = dispatcher.insert(21);
+    dispatcher.create_node(1, BLACK, node_21);
+    let node_41 = dispatcher.create_node(41, BLACK, node_21);
+    dispatcher.create_node(36, RED, node_41);  
+    dispatcher.create_node(51, RED, node_41); 
+
+    dispatcher.display_tree();
+
+    dispatcher.delete(1);
+
+    dispatcher.display_tree();
+}
