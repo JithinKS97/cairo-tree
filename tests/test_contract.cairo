@@ -638,3 +638,61 @@ fn test_right_rotation_after_recolor() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }   
+
+// Test deletion
+
+#[test]
+fn test_deletion_root() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(5);
+    dispatcher.insert(3);
+    dispatcher.insert(8);
+
+    // Delete the root (5)
+    dispatcher.delete(5);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_8, color_8, pos_8) = *result.at(0).at(0);
+    let (value_3, color_3, pos_3) = *result.at(1).at(0);
+
+    assert(value_8 == 8, 'Error in value_8');
+    assert(color_8 == BLACK, 'Error in color_8');
+    assert(pos_8 == 0, 'Error in pos_8');
+
+    assert(value_3 == 3, 'Error in value_3');
+    assert(color_3 == RED, 'Error in color_3');
+    assert(pos_3 == 0, 'Error in pos_3');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}
+
+#[test]
+fn test_deletion_root_2_nodes() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(5);
+    dispatcher.insert(8);
+
+    // Delete the root (5)
+    dispatcher.delete(5);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_8, color_8, pos_8) = *result.at(0).at(0);
+
+    assert(value_8 == 8, 'Error in value_8');
+    assert(color_8 == BLACK, 'Error in color_8');
+    assert(pos_8 == 0, 'Error in pos_8');
+
+    // Check that the tree only has one node
+    assert(result.len() == 1, 'Tree should have only one level');
+    assert(result.at(0).len() == 1, 'Root should be the only node');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}
