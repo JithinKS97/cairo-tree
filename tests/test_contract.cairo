@@ -206,3 +206,200 @@ fn test_recoloring_two() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
+
+#[test]
+fn test_right_rotation() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(21);
+
+    let node_1 = dispatcher.create_node(1, BLACK, 1); 
+    let node_31 = dispatcher.create_node(31, BLACK, 1);
+
+    dispatcher.create_node(18, RED, node_1);
+
+    dispatcher.create_node(1, BLACK, node_1);
+    dispatcher.create_node(18, RED, node_1);
+
+    dispatcher.create_node(26, RED, node_31);
+
+    // Insert 24
+    dispatcher.insert(24);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_24, color_24, pos_24) = *result.at(2).at(1);
+    let (value_26, color_26, pos_26) = *result.at(1).at(1);
+    let (value_31, color_31, pos_31) = *result.at(2).at(2);
+
+    assert(value_24 == 24, 'Error in value_24');
+    assert(color_24 == RED, 'Error in color_24');
+    assert(pos_24 == 2, 'Error in pos_24');
+
+    // Rotated at 26 with 26 as root
+    assert(value_26 == 26, 'Error in value_26');
+    assert(color_26 == BLACK, 'Error in color_26');
+    assert(pos_26 == 1, 'Error in pos_26');
+
+    assert(value_31 == 31, 'Error in value_31');
+    assert(color_31 == RED, 'Error in color_31');
+    assert(pos_31 == 3, 'Error in pos_31');
+}
+
+#[test]
+fn test_left_rotation_no_sibling() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(10);
+
+    let node_7 = dispatcher.create_node(7, BLACK, 1);
+    dispatcher.create_node(20, BLACK, 1);
+
+    dispatcher.create_node(8, RED, node_7);
+
+    dispatcher.create_node(7, BLACK, node_7);
+    dispatcher.create_node(8, RED, node_7);
+
+    // Insert 9
+    dispatcher.insert(9);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_8, color_8, pos_8) = *result.at(1).at(0);
+    let (value_7, color_7, pos_7) = *result.at(2).at(0);
+    let (value_9, color_9, pos_9) = *result.at(2).at(1);
+
+    assert(value_8 == 8, 'Error in value_8');
+    assert(color_8 == BLACK, 'Error in color_8');
+    assert(pos_8 == 0, 'Error in pos_8');
+
+    // Rotated at 8 with 8 as new root of subtree
+    assert(value_7 == 7, 'Error in value_7');
+    assert(color_7 == RED, 'Error in color_7');
+    assert(pos_7 == 0, 'Error in pos_7');
+
+    assert(value_9 == 9, 'Error in value_9');
+    assert(color_9 == RED, 'Error in color_9');
+    assert(pos_9 == 1, 'Error in pos_9');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}
+
+#[test]
+fn test_right_rotation_no_sibling_left_subtree() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(23);
+
+    let node_3 = dispatcher.create_node(3, BLACK, 1);
+    let node_33 = dispatcher.create_node(33, BLACK, 1);
+
+    dispatcher.create_node(2, RED, node_3);
+    dispatcher.create_node(28, RED, node_33);
+
+    // Insert 1
+    dispatcher.insert(1);
+
+    let result = dispatcher.get_tree_structure();
+    println!("{:?}", result);
+
+    let (value_1, color_1, pos_1) = *result.at(2).at(0);
+    let (value_2, color_2, pos_2) = *result.at(1).at(0);
+    let (value_3, color_3, pos_3) = *result.at(2).at(1);
+
+    assert(value_1 == 1, 'Error in value_1');
+    assert(color_1 == RED, 'Error in color_1');
+    assert(pos_1 == 0, 'Error in pos_1');
+
+    // Rotated at 2 with 2 as new root of subtree
+    assert(value_2 == 2, 'Error in value_2');
+    assert(color_2 == BLACK, 'Error in color_2');
+    assert(pos_2 == 0, 'Error in pos_2');
+
+    assert(value_3 == 3, 'Error in value_3');
+    assert(color_3 == RED, 'Error in color_3');
+    assert(pos_3 == 1, 'Error in pos_3');
+}
+
+#[test]
+fn test_left_right_rotation_no_sibling() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(21);
+    let node_1 = dispatcher.create_node(1, BLACK, 1);
+    dispatcher.create_node(18, RED, node_1);
+    let node_31 = dispatcher.create_node(31, BLACK, 1);
+    dispatcher.create_node(26, RED, node_31);
+
+    // Insert 24
+    dispatcher.insert(28);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_26, color_26, pos_26) = *result.at(2).at(1);
+    let (value_28, color_28, pos_28) = *result.at(1).at(1);
+    let (value_31, color_31, pos_31) = *result.at(2).at(2);
+
+    assert(value_26 == 26, 'Error in value_26');
+    assert(color_26 == RED, 'Error in color_26');
+    assert(pos_26 == 2, 'Error in pos_26');
+
+    // Rotated at 26 with 26 as new root of subtree
+    assert(value_28 == 28, 'Error in value_28');
+    assert(color_28 == BLACK, 'Error in color_28');
+    assert(pos_28 == 1, 'Error in pos_28');
+
+    assert(value_31 == 31, 'Error in value_31');
+    assert(color_31 == RED, 'Error in color_31');
+    assert(pos_31 == 3, 'Error in pos_31');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}
+
+#[test]
+fn test_right_left_rotation_no_sibling() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(21);
+    let node_1 = dispatcher.create_node(1, BLACK, 1);
+    dispatcher.create_node(18, RED, node_1);
+    let node_31 = dispatcher.create_node(31, BLACK, 1);
+    dispatcher.create_node(18, RED, node_1);
+    dispatcher.create_node(26, RED, node_31);
+
+    // Insert 13
+    dispatcher.insert(13);
+    let result = dispatcher.get_tree_structure();
+
+    let (value_13, color_13, pos_13) = *result.at(1).at(0);
+    let (value_18, color_18, pos_18) = *result.at(2).at(1);
+    let (value_1, color_1, pos_1) = *result.at(2).at(0);
+
+    assert(value_13 == 13, 'Error in value_13');
+    assert(color_13 == BLACK, 'Error in color_13');
+    assert(pos_13 == 0, 'Error in pos_13');
+
+    // Rotated at 18 with 18 as new root of subtree
+    assert(value_18 == 18, 'Error in value_18');
+    assert(color_18 == RED, 'Error in color_18');
+    assert(pos_18 == 1, 'Error in pos_18');
+
+    assert(value_1 == 1, 'Error in value_1');
+    assert(color_1 == RED, 'Error in color_1');
+    assert(pos_1 == 0, 'Error in pos_1');
+}
+
+#[test]
+fn test_recolor_lr() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(10);
+}
