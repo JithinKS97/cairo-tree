@@ -595,9 +595,46 @@ fn test_right_rotation_after_recolor() {
     dispatcher.create_node(2, RED, node_3);
     dispatcher.create_node(4, RED, node_3);
 
-    dispatcher.display_tree();
-
     dispatcher.insert(1);
 
-    dispatcher.display_tree();
-}
+    let result = dispatcher.get_tree_structure();
+
+    let (value_1, color_1, pos_1) = *result.at(3).at(0);
+    let (value_2, color_2, pos_2) = *result.at(2).at(0);
+    let (value_3, color_3, pos_3) = *result.at(1).at(0);
+    let (value_4, color_4, pos_4) = *result.at(2).at(1);
+    let (value_13, color_13, pos_13) = *result.at(0).at(0);
+    let (value_33, color_33, pos_33) = *result.at(1).at(1);
+    let (value_29, color_29, pos_29) = *result.at(2).at(2);
+
+    assert(value_1 == 1, 'Error in value_1');
+    assert(color_1 == RED, 'Error in color_1');
+    assert(pos_1 == 0, 'Error in pos_1');
+
+    assert(value_2 == 2, 'Error in value_2');
+    assert(color_2 == BLACK, 'Error in color_2');
+    assert(pos_2 == 0, 'Error in pos_2');
+
+    assert(value_3 == 3, 'Error in value_3');
+    assert(color_3 == RED, 'Error in color_3');
+    assert(pos_3 == 0, 'Error in pos_3');
+
+    assert(value_4 == 4, 'Error in value_4');
+    assert(color_4 == BLACK, 'Error in color_4');
+    assert(pos_4 == 1, 'Error in pos_4');
+
+    assert(value_13 == 13, 'Error in value_13');
+    assert(color_13 == BLACK, 'Error in color_13');
+    assert(pos_13 == 0, 'Error in pos_13');
+
+    assert(value_33 == 33, 'Error in value_33');
+    assert(color_33 == RED, 'Error in color_33');
+    assert(pos_33 == 1, 'Error in pos_33');
+
+    assert(value_29 == 29, 'Error in value_29');
+    assert(color_29 == BLACK, 'Error in color_29');
+    assert(pos_29 == 2, 'Error in pos_29');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}   
