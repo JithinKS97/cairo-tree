@@ -1,6 +1,6 @@
 #[starknet::interface]
 pub trait IRBTree<TContractState> {
-    fn insert(ref self: TContractState, value: u256);
+    fn insert(ref self: TContractState, value: u256) -> felt252;
     fn find(ref self: TContractState, value: u256) -> felt252;
     fn delete(ref self: TContractState, value: u256);
     fn get_root(self: @TContractState) -> felt252;
@@ -10,6 +10,8 @@ pub trait IRBTree<TContractState> {
     fn get_tree_structure(ref self: TContractState) -> Array<Array<(u256, bool, u256)>>;
     fn is_tree_valid(ref self: TContractState) -> bool;
     fn create_node(ref self: TContractState, value: u256, color: bool, parent: felt252) -> felt252;
+    fn get_children(ref self: TContractState, node_id: felt252) -> (felt252, felt252);
+    fn get_node(ref self: TContractState, node_id: felt252) -> (u256, bool, felt252);
 }
 
 const BLACK: bool = false;
@@ -48,20 +50,26 @@ mod RBTree {
 
     #[abi(embed_v0)]
     impl RBTree of super::IRBTree<ContractState> {
-        fn insert(ref self: ContractState, value: u256) {
+        fn insert(ref self: ContractState, value: u256) -> felt252 {
             let new_node_id = self.create_new_node(value);
 
             if self.root.read() == 0 {
                 self.root.write(new_node_id);
-                return;
+                return new_node_id;
             }
 
             self.insert_node_recursively(self.root.read(), new_node_id, value);
             self.balance_after_insertion(new_node_id);
+            return new_node_id;
         }
 
         fn find(ref self: ContractState, value: u256) -> felt252 {
             self.find_node(self.root.read(), value)
+        }
+
+        fn get_children(ref self: ContractState, node_id: felt252) -> (felt252, felt252) {
+            let node = self.tree.read(node_id);
+            (node.left, node.right)
         }
 
         fn delete(ref self: ContractState, value: u256) {
@@ -74,6 +82,11 @@ mod RBTree {
 
         fn get_root(self: @ContractState) -> felt252 {
             self.root.read()
+        }
+
+        fn get_node(ref self: ContractState, node_id: felt252) -> (u256, bool, felt252) {
+            let node = self.tree.read(node_id);
+            (node.value, node.color, node.parent)
         }
 
         fn traverse_postorder(ref self: ContractState) {
