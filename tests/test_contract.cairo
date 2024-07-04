@@ -1097,3 +1097,318 @@ fn test_deletion_black_node_no_successor_case_3_then_5_then_6() {
     assert(is_tree_valid == true, 'Error in tree');
 }
 
+#[test]
+fn test_deletion_black_node_successor_case_2_then_4() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let node_10 = dispatcher.insert(10);
+    let node_5 = dispatcher.create_node(5, BLACK, node_10);
+    dispatcher.create_node(3, BLACK, node_5);
+    dispatcher.create_node(7, BLACK, node_5);
+    let node_40 = dispatcher.create_node(40, BLACK, node_10);
+    dispatcher.create_node(20, BLACK, node_40);
+    let node_60 = dispatcher.create_node(60, RED, node_40);
+    dispatcher.create_node(50, BLACK, node_60);
+    dispatcher.create_node(80, BLACK, node_60);
+
+    dispatcher.delete(10);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_20, color_20, pos_20) = *result.at(0).at(0);
+    assert(value_20 == 20, 'Error in value 20');
+    assert(color_20 == BLACK, 'Error in color 20');
+    assert(pos_20 == 0, 'Error in pos 20');
+
+    let (value_5, color_5, pos_5) = *result.at(1).at(0);
+    assert(value_5 == 5, 'Error in value 5');
+    assert(color_5 == BLACK, 'Error in color 5');
+    assert(pos_5 == 0, 'Error in pos 5');
+
+    let (value_60, color_60, pos_60) = *result.at(1).at(1);
+    assert(value_60 == 60, 'Error in value 60');
+    assert(color_60 == BLACK, 'Error in color 60');
+    assert(pos_60 == 1, 'Error in pos 60');
+
+    let (value_3, color_3, pos_3) = *result.at(2).at(0);
+    assert(value_3 == 3, 'Error in value 3');
+    assert(color_3 == BLACK, 'Error in color 3');
+    assert(pos_3 == 0, 'Error in pos 3');
+
+    let (value_7, color_7, pos_7) = *result.at(2).at(1);
+    assert(value_7 == 7, 'Error in value 7');
+    assert(color_7 == BLACK, 'Error in color 7');
+    assert(pos_7 == 1, 'Error in pos 7');
+
+    let (value_40, color_40, pos_40) = *result.at(2).at(2);
+    assert(value_40 == 40, 'Error in value 40');
+    assert(color_40 == BLACK, 'Error in color 40');
+    assert(pos_40 == 2, 'Error in pos 40');
+
+    let (value_80, color_80, pos_80) = *result.at(2).at(3);
+    assert(value_80 == 80, 'Error in value 80');
+    assert(color_80 == BLACK, 'Error in color 80');
+    assert(pos_80 == 3, 'Error in pos 80');
+
+    let (value_50, color_50, pos_50) = *result.at(3).at(0);
+    assert(value_50 == 50, 'Error in value 50');
+    assert(color_50 == RED, 'Error in color 50');
+    assert(pos_50 == 5, 'Error in pos 50');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Error in tree');
+}
+
+#[test]
+fn test_mirror_deletion_black_node_successor_case_2_then_4() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let node_20 = dispatcher.insert(20);
+    let node_10 = dispatcher.create_node(10, BLACK, node_20);
+    let node_30 = dispatcher.create_node(30, BLACK, node_20);
+    let node_8  = dispatcher.create_node(8, RED, node_10);
+    dispatcher.create_node(15, BLACK, node_10);
+    dispatcher.create_node(6, BLACK, node_8);
+    dispatcher.create_node(9, BLACK, node_8);
+    dispatcher.create_node(25, BLACK, node_30);
+    dispatcher.create_node(35, BLACK, node_30);
+
+    dispatcher.delete(15);
+
+    let result = dispatcher.get_tree_structure();
+    
+    let (value_20, color_20, pos_20) = *result.at(0).at(0);
+    assert(value_20 == 20, 'Error in value 20');
+    assert(color_20 == BLACK, 'Error in color 20');
+    assert(pos_20 == 0, 'Error in pos 20');
+
+    let (value_8, color_8, pos_8) = *result.at(1).at(0);
+    assert(value_8 == 8, 'Error in value 8');
+    assert(color_8 == BLACK, 'Error in color 8');
+    assert(pos_8 == 0, 'Error in pos 8');
+
+    let (value_30, color_30, pos_30) = *result.at(1).at(1);
+    assert(value_30 == 30, 'Error in value 30');
+    assert(color_30 == BLACK, 'Error in color 30');
+    assert(pos_30 == 1, 'Error in pos 30');
+
+    let (value_6, color_6, pos_6) = *result.at(2).at(0);
+    assert(value_6 == 6, 'Error in value 6');
+    assert(color_6 == BLACK, 'Error in color 6');
+    assert(pos_6 == 0, 'Error in pos 6');
+
+    let (value_10, color_10, pos_10) = *result.at(2).at(1);
+    assert(value_10 == 10, 'Error in value 10');
+    assert(color_10 == BLACK, 'Error in color 10');
+    assert(pos_10 == 1, 'Error in pos 10');
+
+    let (value_25, color_25, pos_25) = *result.at(2).at(2);
+    assert(value_25 == 25, 'Error in value 25');
+    assert(color_25 == BLACK, 'Error in color 25');
+    assert(pos_25 == 2, 'Error in pos 25');
+
+    let (value_35, color_35, pos_35) = *result.at(2).at(3);
+    assert(value_35 == 35, 'Error in value 35');
+    assert(color_35 == BLACK, 'Error in color 35');
+    assert(pos_35 == 3, 'Error in pos 35');
+
+    let (value_9, color_9, pos_9) = *result.at(3).at(0);
+    assert(value_9 == 9, 'Error in value 9');
+    assert(color_9 == RED, 'Error in color 9');
+    assert(pos_9 == 2, 'Error in pos 9');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Error in tree');
+}
+
+#[test]
+fn test_delete_tree_one_by_one() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let node_20 = dispatcher.insert(20);
+    let node_10 = dispatcher.create_node(10, BLACK, node_20);
+    dispatcher.create_node(5, RED, node_10);
+    dispatcher.create_node(15, RED, node_10);
+    let node_38 = dispatcher.create_node(38, RED, node_20);
+    let node_28 = dispatcher.create_node(28, BLACK, node_38);
+    dispatcher.create_node(23, RED, node_28);
+    dispatcher.create_node(29, RED, node_28);
+    let node_48 = dispatcher.create_node(48, BLACK, node_38);
+    dispatcher.create_node(41, RED, node_48);
+    dispatcher.create_node(49, RED, node_48);
+
+    dispatcher.delete(49);
+    dispatcher.delete(38);
+    dispatcher.delete(28);
+    dispatcher.delete(10);
+    dispatcher.delete(5);
+    dispatcher.delete(15);
+    dispatcher.delete(48);
+
+    let result = dispatcher.get_tree_structure();
+   
+    let (value_23, color_23, pos_23) = *result.at(0).at(0);
+    assert(value_23 == 23, 'Error in value 23');
+    assert(color_23 == BLACK, 'Error in color 23');
+    assert(pos_23 == 0, 'Error in pos 23');
+    
+    let (value_20, color_20, pos_20) = *result.at(1).at(0);
+    assert(value_20 == 20, 'Error in value 20');
+    assert(color_20 == BLACK, 'Error in color 20');
+    assert(pos_20 == 0, 'Error in pos 20');
+    
+    let (value_41, color_41, pos_41) = *result.at(1).at(1);
+    assert(value_41 == 41, 'Error in value 41');
+    assert(color_41 == BLACK, 'Error in color 41');
+    assert(pos_41 == 1, 'Error in pos 41');
+    
+    let (value_29, color_29, pos_29) = *result.at(2).at(0);
+    assert(value_29 == 29, 'Error in value 29');
+    assert(color_29 == RED, 'Error in color 29');
+    assert(pos_29 == 2, 'Error in pos 29');
+
+    dispatcher.delete(20);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_29, color_29, pos_29) = *result.at(0).at(0);
+    assert(value_29 == 29, 'Error in value 29');
+    assert(color_29 == BLACK, 'Error in color 29');
+    assert(pos_29 == 0, 'Error in pos 29');
+
+    let (value_23, color_23, pos_23) = *result.at(1).at(0);
+    assert(value_23 == 23, 'Error in value 23');
+    assert(color_23 == BLACK, 'Error in color 23');
+    assert(pos_23 == 0, 'Error in pos 23');
+
+    let (value_41, color_41, pos_41) = *result.at(1).at(1);
+    assert(value_41 == 41, 'Error in value 41');
+    assert(color_41 == BLACK, 'Error in color 41');
+    assert(pos_41 == 1, 'Error in pos 41');
+
+    dispatcher.delete(29);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_41, color_41, pos_41) = *result.at(0).at(0);
+    assert(value_41 == 41, 'Error in value 41');
+    assert(color_41 == BLACK, 'Error in color 41');
+    assert(pos_41 == 0, 'Error in pos 41');
+
+    dispatcher.delete(41);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_23, color_23, pos_23) = *result.at(0).at(0);
+    assert(value_23 == 23, 'Error in value 23');
+    assert(color_23 == BLACK, 'Error in color 23');
+    assert(pos_23 == 0, 'Error in pos 23');
+}
+
+// Stress Test
+
+const max_no:u8 = 200;
+
+fn random(seed: felt252) -> u8 {
+    // Use pedersen hash to generate a pseudo-random felt252
+    let hash = pedersen(seed, 0);
+    
+    // Convert the felt252 to u256 and take the last 8 bits
+    let random_u256: u256 = hash.into();
+    let random_u8: u8 = (random_u256 & 0xFF).try_into().unwrap();
+    
+    // Scale
+    (random_u8 % max_no) + 1
+}
+
+#[test]
+fn testing_large_no_insertions_deletions() {
+    let contract_address = deploy_contract("RBTree");
+    let no_of_nodes = max_no;
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let mut inserted_numbers:Array<u256> = ArrayTrait::new();
+    let mut is_number_inserted: Felt252Dict<bool> = Default::default();
+
+    let mut i = 1;
+    while i <= no_of_nodes {
+        let rand_num = random(i.try_into().unwrap());
+        if is_number_inserted.get(rand_num.try_into().unwrap()) {
+            i = i+1;
+            continue;
+        } else {
+            is_number_inserted.insert(rand_num.try_into().unwrap(), true);
+        }
+        dispatcher.insert(rand_num.try_into().unwrap());
+        inserted_numbers.append(rand_num.try_into().unwrap());
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        i = i+1;
+    };
+
+    let mut j = 0;
+    while j < inserted_numbers.len() {
+        let num = *inserted_numbers.at(j);
+        dispatcher.delete(num.try_into().unwrap());
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        j = j+1;
+    };
+
+    let tree = dispatcher.get_tree_structure();
+    assert(tree.len() == 0, 'Tree is not empty');
+}
+
+
+#[test]
+fn test_add_0_to_100_delete_100_to_0() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let mut i = 1;
+    while i <= 100 {
+        dispatcher.insert(i);
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        i = i+1;
+    };
+
+    let mut j = 100;
+    while j >= 1 {
+        dispatcher.delete(j);
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        j = j-1;
+    };
+
+    let tree = dispatcher.get_tree_structure();
+    assert(tree.len() == 0, 'Tree is not empty');
+}
+
+#[test]
+fn test_add_0_to_100_delete_0_to_100() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    let mut i = 1;
+    while i <= 100 {
+        dispatcher.insert(i);
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        i = i+1;
+    };
+
+    let mut j = 1;
+    while j <= 100 {
+        dispatcher.delete(j);
+        let is_tree_valid = dispatcher.is_tree_valid();
+        assert(is_tree_valid, 'Tree is invalid');
+        j = j+1;
+    };
+
+    let tree = dispatcher.get_tree_structure();
+    assert(tree.len() == 0, 'Tree is not empty');
+}
