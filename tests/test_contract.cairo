@@ -444,3 +444,70 @@ fn test_recolor_lr() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
+
+#[test]
+fn test_functional_test_build_tree() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(2);
+    dispatcher.insert(1);
+    dispatcher.insert(4);
+    dispatcher.insert(5);
+    dispatcher.insert(9);
+    dispatcher.insert(3);
+    dispatcher.insert(6);
+    dispatcher.insert(7);
+    dispatcher.insert(15);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_5, color_5, pos_5) = *result.at(0).at(0);
+    let (value_2, color_2, pos_2) = *result.at(1).at(0);
+    let (value_7, color_7, pos_7) = *result.at(1).at(1);
+    let (value_1, color_1, pos_1) = *result.at(2).at(0);
+    let (value_4, color_4, pos_4) = *result.at(2).at(1);
+    let (value_6, color_6, pos_6) = *result.at(2).at(2);
+    let (value_9, color_9, pos_9) = *result.at(2).at(3);
+    let (value_3, color_3, pos_3) = *result.at(3).at(0);
+    let (value_15, color_15, pos_15) = *result.at(3).at(1);
+
+    assert(value_5 == 5, 'Error in value_5');
+    assert(color_5 == BLACK, 'Error in color_5');
+    assert(pos_5 == 0, 'Error in pos_5');
+
+    assert(value_2 == 2, 'Error in value_2');
+    assert(color_2 == RED, 'Error in color_2');
+    assert(pos_2 == 0, 'Error in pos_2');
+
+    assert(value_7 == 7, 'Error in value_7');
+    assert(color_7 == RED, 'Error in color_7');
+    assert(pos_7 == 1, 'Error in pos_7');
+
+    assert(value_1 == 1, 'Error in value_1');
+    assert(color_1 == BLACK, 'Error in color_1');
+    assert(pos_1 == 0, 'Error in pos_1');
+
+    assert(value_4 == 4, 'Error in value_4');
+    assert(color_4 == BLACK, 'Error in color_4');
+    assert(pos_4 == 1, 'Error in pos_4');
+
+    assert(value_6 == 6, 'Error in value_6');
+    assert(color_6 == BLACK, 'Error in color_6');
+    assert(pos_6 == 2, 'Error in pos_6');
+
+    assert(value_9 == 9, 'Error in value_9');
+    assert(color_9 == BLACK, 'Error in color_9');
+    assert(pos_9 == 3, 'Error in pos_9');
+    
+    assert(value_3 == 3, 'Error in value_3');
+    assert(color_3 == RED, 'Error in color_3');
+    assert(pos_3 == 2, 'Error in pos_3');
+
+    assert(value_15 == 15, 'Error in value_15');
+    assert(color_15 == RED, 'Error in color_15');
+    assert(pos_15 == 7, 'Error in pos_15');
+    
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
+}
