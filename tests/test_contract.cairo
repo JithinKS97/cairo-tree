@@ -305,7 +305,6 @@ fn test_right_rotation_no_sibling_left_subtree() {
     dispatcher.insert(1);
 
     let result = dispatcher.get_tree_structure();
-    println!("{:?}", result);
 
     let (value_1, color_1, pos_1) = *result.at(2).at(0);
     let (value_2, color_2, pos_2) = *result.at(1).at(0);
@@ -401,5 +400,47 @@ fn test_recolor_lr() {
     let contract_address = deploy_contract("RBTree");
     let dispatcher = IRBTreeDispatcher { contract_address };
 
-    dispatcher.insert(10);
+    dispatcher.insert(31);
+    let node_11 = dispatcher.create_node(11, RED, 1);
+    let node_41 = dispatcher.create_node(41, BLACK, 1);
+    dispatcher.create_node(1, BLACK, node_11);
+    let node_27 = dispatcher.create_node(27, BLACK, node_11);
+    dispatcher.create_node(22, RED, node_27);
+    dispatcher.create_node(30, RED, node_27);
+    dispatcher.create_node(36, RED, node_41);
+    dispatcher.create_node(51, RED, node_41);
+
+    // Insert 25
+    dispatcher.insert(25);  
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_27, color_27, pos_27) = *result.at(0).at(0);
+    let (value_31, color_31, pos_31) = *result.at(1).at(1);
+    let (value_22, color_22, pos_22) = *result.at(2).at(1);
+    let (value_25, color_25, pos_25) = *result.at(3).at(0);
+    let (value_30, color_30, pos_30) = *result.at(2).at(2);
+
+    assert(value_27 == 27, 'Error in value_27');
+    assert(color_27 == BLACK, 'Error in color_27');
+    assert(pos_27 == 0, 'Error in pos_27');
+
+    assert(value_31 == 31, 'Error in value_31');
+    assert(color_31 == RED, 'Error in color_31');
+    assert(pos_31 == 1, 'Error in pos_31');
+
+    assert(value_22 == 22, 'Error in value_22');
+    assert(color_22 == BLACK, 'Error in color_22');
+    assert(pos_22 == 1, 'Error in pos_22');
+
+    assert(value_25 == 25, 'Error in value_25');
+    assert(color_25 == RED, 'Error in color_25');
+    assert(pos_25 == 3, 'Error in pos_25');
+
+    assert(value_30 == 30, 'Error in value_30');
+    assert(color_30 == BLACK, 'Error in color_30');
+    assert(pos_30 == 2, 'Error in pos_30');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'Tree invalid');
 }
