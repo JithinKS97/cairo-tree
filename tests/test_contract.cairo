@@ -696,3 +696,37 @@ fn test_deletion_root_2_nodes() {
     let is_tree_valid = dispatcher.is_tree_valid();
     assert(is_tree_valid == true, 'Tree invalid');
 }
+
+#[test]
+fn test_delete_single_child() {
+    let contract_address = deploy_contract("RBTree");
+    let dispatcher = IRBTreeDispatcher { contract_address };
+
+    dispatcher.insert(5);
+    dispatcher.insert(1);
+    dispatcher.insert(6);
+
+    // Delete node 6
+    dispatcher.delete(6);
+
+    let result = dispatcher.get_tree_structure();
+
+    let (value_5, color_5, pos_5) = *result.at(0).at(0);
+    let (value_1, color_1, pos_1) = *result.at(1).at(0);
+
+    assert(value_5 == 5, 'val5 err');
+    assert(color_5 == BLACK, 'col5 err');
+    assert(pos_5 == 0, 'pos5 err');
+
+    assert(value_1 == 1, 'val1 err');
+    assert(color_1 == RED, 'col1 err');
+    assert(pos_1 == 0, 'pos1 err');
+
+    // Check that the tree has only two nodes
+    assert(result.len() == 2, '2lvl err');
+    assert(result.at(0).len() == 1, 'root err');
+    assert(result.at(1).len() == 1, 'child err');
+
+    let is_tree_valid = dispatcher.is_tree_valid();
+    assert(is_tree_valid == true, 'inv tree');
+}
