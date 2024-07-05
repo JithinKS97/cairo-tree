@@ -157,6 +157,9 @@ mod RBTree {
             let mut current_node = self.tree.read(current_id);
 
             if (value == current_node.value) {
+                // revert
+                let mut next_id = self.next_id.read();
+                self.next_id.write(next_id - 1);
                 return;
             } else if value < current_node.value {
                 if current_node.left == 0 {
