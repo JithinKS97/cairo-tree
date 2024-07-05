@@ -1343,6 +1343,8 @@ fn testing_large_no_insertions_deletions() {
             is_number_inserted.insert(rand_num.try_into().unwrap(), true);
         }
         dispatcher.insert(rand_num.try_into().unwrap());
+        let node_found = dispatcher.find(rand_num.try_into().unwrap());
+        assert(node_found != 0, 'Node not found');
         inserted_numbers.append(rand_num.try_into().unwrap());
         let is_tree_valid = dispatcher.is_tree_valid();
         assert(is_tree_valid, 'Tree is invalid');
@@ -1353,6 +1355,8 @@ fn testing_large_no_insertions_deletions() {
     while j < inserted_numbers.len() {
         let num = *inserted_numbers.at(j);
         dispatcher.delete(num.try_into().unwrap());
+        let node_found = dispatcher.find(num.try_into().unwrap());
+        assert(node_found == 0, 'Node found');
         let is_tree_valid = dispatcher.is_tree_valid();
         assert(is_tree_valid, 'Tree is invalid');
         j = j+1;
